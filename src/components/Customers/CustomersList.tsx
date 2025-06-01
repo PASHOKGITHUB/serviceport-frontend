@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,74 +17,64 @@ export default function CustomersList() {
   const displayCustomers = searchQuery ? searchResults : customers;
 
   if (isLoading) {
-    return (
-      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-        <Skeleton className="h-8 w-48" />
-        <Card>
-          <CardContent className="p-6">
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-0">
-            <div className="space-y-4 p-6">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <CustomersListSkeleton />;
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
-        <p className="text-gray-600 text-sm sm:text-base mt-1">View and manage customer information</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
+          <p className="text-gray-600 text-sm sm:text-base">
+            {displayCustomers.length} total customers
+          </p>
+        </div>
       </div>
 
-      {/* Search Bar */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search by name, phone, or customer ID..."
-              className="pl-10 h-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      {/* Search Section */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex items-center">
+          {/* Search Bar - Left Side */}
+          <div className="flex-1 lg:max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by name, phone, or customer ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Customer Table */}
-      <Card>
-        <CardContent className="p-0">
-          {/* Table Header - Desktop */}
-          <div className="hidden md:grid bg-red-600 text-white px-6 py-3 grid-cols-6 gap-4 text-sm font-medium rounded-t-lg">
-            <div>Customer ID</div>
-            <div>Name</div>
-            <div>Phone</div>
-            <div>Service ID</div>
-            <div>Status</div>
-            <div>Created Date</div>
-          </div>
+      {/* Customers Table */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {/* Desktop Table Header */}
+        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
+          <div className="text-center">Customer ID</div>
+          <div className="text-center">Name</div>
+          <div className="text-center">Phone</div>
+          <div className="text-center">Service ID</div>
+          <div className="text-center">Status</div>
+          <div className="text-center">Created Date</div>
+        </div>
 
-          {/* Table Body */}
-          <div className="divide-y divide-gray-200">
-            {displayCustomers.map((customer) => (
-              <div key={customer._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
-                {/* Mobile Layout */}
-                <div className="md:hidden space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium text-gray-900">{customer.customerName}</div>
-                      <div className="text-sm text-gray-500 break-all">{customer.phone}</div>
-                    </div>
+        {/* Table Body */}
+        <div className="divide-y divide-gray-200">
+          {displayCustomers.map((customer) => (
+            <div key={customer._id} className="p-4 sm:p-6">
+              {/* Mobile Layout */}
+              <div className="md:hidden space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 break-words">{customer.customerName}</div>
+                    <div className="text-sm text-gray-500 break-all">{customer.phone}</div>
+                    <div className="text-sm text-gray-500 break-words">{customer.location}</div>
+                  </div>
+                  <div className="flex flex-col gap-2 items-end">
                     <Badge className={`${
                       customer.serviceStatus === 'Completed' 
                         ? 'bg-green-100 text-green-800 border-green-200'
@@ -95,57 +84,93 @@ export default function CustomersList() {
                     }`}>
                       {customer.serviceStatus}
                     </Badge>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    <div>Customer ID: <span className="font-mono">{customer.customerId}</span></div>
-                    <div>Service ID: <span className="font-mono">{customer.serviceId.serviceId}</span></div>
-                    <div>Location: {customer.location}</div>
-                    <div>Created: {formatDate(customer.createdAt)}</div>
                   </div>
                 </div>
-
-                {/* Desktop Layout */}
-                <div className="hidden md:grid grid-cols-6 gap-4 items-center">
-                  <div className="font-medium text-gray-900 font-mono text-sm break-all">
-                    {customer.customerId}
+                
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Customer ID: </span>
+                    <span className="text-sm text-gray-900 font-mono break-all">{customer.customerId}</span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{customer.customerName}</div>
-                    <div className="text-sm text-gray-500">{customer.location}</div>
-                  </div>
-                  <div className="text-gray-900 break-all">{customer.phone}</div>
-                  <div>
-                    <div className="font-medium text-gray-900 font-mono text-sm">
-                      {customer.serviceId.serviceId}
-                    </div>
-                    <div className="text-sm text-gray-500">{customer.serviceId.action}</div>
+                    <span className="text-sm font-medium text-gray-500">Service ID: </span>
+                    <span className="text-sm text-gray-900 font-mono break-all">{customer.serviceId.serviceId}</span>
                   </div>
                   <div>
-                    <Badge className={`${
-                      customer.serviceStatus === 'Completed' 
-                        ? 'bg-green-100 text-green-800 border-green-200'
-                        : customer.serviceStatus === 'Cancelled'
-                        ? 'bg-red-100 text-red-800 border-red-200'
-                        : 'bg-blue-100 text-blue-800 border-blue-200'
-                    }`}>
-                      {customer.serviceStatus}
-                    </Badge>
+                    <span className="text-sm font-medium text-gray-500">Action: </span>
+                    <span className="text-sm text-gray-900">{customer.serviceId.action}</span>
                   </div>
-                  <div className="text-sm text-gray-500">{formatDate(customer.createdAt)}</div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500">Created: </span>
+                    <span className="text-sm text-gray-900">{formatDate(customer.createdAt)}</span>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
 
-          {displayCustomers.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <div className="text-gray-500">
-                {searchQuery ? 'No customers found matching your search.' : 'No customers found.'}
+              {/* Desktop Layout - Properly Centered */}
+              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
+                <div className="font-medium text-gray-900 font-mono text-sm break-all flex justify-center">
+                  {customer.customerId}
+                </div>
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="font-medium text-gray-900 break-words">{customer.customerName}</div>
+                  <div className="text-sm text-gray-500 break-words">{customer.location}</div>
+                </div>
+                <div className="text-gray-900 break-all flex justify-center items-center">{customer.phone}</div>
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="font-medium text-gray-900 font-mono text-sm break-all">
+                    {customer.serviceId.serviceId}
+                  </div>
+                  <div className="text-sm text-gray-500">{customer.serviceId.action}</div>
+                </div>
+                <div className="flex justify-center items-center">
+                  <Badge className={`${
+                    customer.serviceStatus === 'Completed' 
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : customer.serviceStatus === 'Cancelled'
+                      ? 'bg-red-100 text-red-800 border-red-200'
+                      : 'bg-blue-100 text-blue-800 border-blue-200'
+                  }`}>
+                    {customer.serviceStatus}
+                  </Badge>
+                </div>
+                <div className="text-sm text-gray-500 flex justify-center items-center">{formatDate(customer.createdAt)}</div>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+
+        {displayCustomers.length === 0 && (
+          <div className="px-6 py-12 text-center">
+            <div className="text-gray-500">
+              {searchQuery ? 'No customers found matching your search.' : 'No customers found.'}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CustomersListSkeleton() {
+  return (
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <Skeleton className="h-8 w-32 mb-2" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+      </div>
+      
+      <Skeleton className="h-16 w-full" />
+      
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="space-y-4 p-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

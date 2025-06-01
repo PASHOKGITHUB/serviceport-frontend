@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import CreateBranchForm from '@/components/Branches/CreateBranchForm';
 
 export const metadata: Metadata = {
-  title: 'Create Branch - ServiceHub',
+  title: 'Create Branch - ServicePort',
   description: 'Create a new branch location',
 };
 

@@ -1,89 +1,117 @@
+// src/instance/services.ts
 import ApiClient from '@/lib/apiClient';
 import type { 
-  Service, 
   CreateServiceRequest, 
   UpdateServiceRequest, 
-  ServiceFilters 
+  ServiceFilters
 } from '@/domain/entities/service';
-import type { ApiResponse } from '@/domain/entities/common';
 
-export const getServices = async (filters?: ServiceFilters): Promise<Service[]> => {
-  try {
-    const response = await ApiClient.get<ApiResponse<{ services: Service[] }>>('/services', {
-      params: filters
-    });
-    return response.data.data.services;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch services';
-    throw new Error(message);
-  }
+// Define report filters interface
+interface ReportFilters {
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  technician?: string;
+}
+
+// Get all services
+export const getServices = async (filters?: ServiceFilters) => {
+  const params = new URLSearchParams();
+  
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.technician) params.append('technician', filters.technician);
+  if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) params.append('dateTo', filters.dateTo);
+  if (filters?.search) params.append('search', filters.search);
+  
+  const queryString = params.toString();
+  const url = queryString ? `/services?${queryString}` : '/services';
+  
+  const response = await ApiClient.get(url);
+  return response.data;
 };
 
-export const getService = async (id: string): Promise<Service> => {
-  try {
-    const response = await ApiClient.get<ApiResponse<{ service: Service }>>(`/services/${id}`);
-    return response.data.data.service;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch service';
-    throw new Error(message);
-  }
+// Get single service
+export const getService = async (id: string) => {
+  const response = await ApiClient.get(`/services/${id}`);
+  return response.data.data.service;
 };
 
-export const createService = async (data: CreateServiceRequest): Promise<Service> => {
-  try {
-    const response = await ApiClient.post<ApiResponse<{ service: Service }>>('/services', data);
-    return response.data.data.service;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create service';
-    throw new Error(message);
-  }
+// Create service
+export const createService = async (data: CreateServiceRequest) => {
+  const response = await ApiClient.post('/services', data);
+  return response.data;
 };
 
-export const updateService = async (id: string, data: UpdateServiceRequest): Promise<Service> => {
-  try {
-    const response = await ApiClient.patch<ApiResponse<{ service: Service }>>(`/services/${id}`, data);
-    return response.data.data.service;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update service';
-    throw new Error(message);
-  }
+// Update service
+export const updateService = async (id: string, data: UpdateServiceRequest) => {
+  const response = await ApiClient.patch(`/services/${id}`, data);
+  return response.data;
 };
 
-export const updateServiceAction = async (id: string, action: string): Promise<Service> => {
-  try {
-    const response = await ApiClient.patch<ApiResponse<{ service: Service }>>(`/services/${id}/action`, { action });
-    return response.data.data.service;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update service action';
-    throw new Error(message);
-  }
+// Update service action/status
+export const updateServiceAction = async (id: string, data: { action: string }) => {
+  const response = await ApiClient.patch(`/services/${id}/action`, data);
+  return response.data;
 };
 
-export const assignTechnician = async (id: string, technicianId: string): Promise<Service> => {
-  try {
-    const response = await ApiClient.patch<ApiResponse<{ service: Service }>>(`/services/${id}/assign-technician`, { technicianId });
-    return response.data.data.service;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to assign technician';
-    throw new Error(message);
-  }
+// Assign technician to service
+export const assignTechnician = async (id: string, data: { technicianId: string }) => {
+  const response = await ApiClient.patch(`/services/${id}/assign-technician`, data);
+  return response.data;
 };
 
-export const deleteService = async (id: string): Promise<void> => {
-  try {
-    await ApiClient.delete(`/services/${id}`);
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete service';
-    throw new Error(message);
-  }
+// Update service cost
+export const updateServiceCost = async (id: string, data: { serviceCost: number }) => {
+  const response = await ApiClient.patch(`/services/${id}/cost`, data);
+  return response.data;
 };
 
-export const getServiceStats = async (): Promise<unknown> => {
-  try {
-    const response = await ApiClient.get<ApiResponse<{ stats: unknown }>>('/services/stats');
-    return response.data.data.stats;
-  } catch (error: unknown) {
-    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to fetch service stats';
-    throw new Error(message);
-  }
+// Delete service
+export const deleteService = async (id: string) => {
+  const response = await ApiClient.delete(`/services/${id}`);
+  return response.data;
+};
+
+// Get service statistics
+export const getServiceStats = async () => {
+  const response = await ApiClient.get('/services/stats');
+  return response.data.data.stats;
+};
+
+// Get services by status
+export const getServicesByStatus = async (status: string) => {
+  const response = await ApiClient.get(`/services/status/${status}`);
+  return response.data.data.services;
+};
+
+// Get services by technician
+export const getServicesByTechnician = async (technicianId: string) => {
+  const response = await ApiClient.get(`/services/technician/${technicianId}`);
+  return response.data.data.services;
+};
+
+// Get services report
+export const getServicesReport = async (filters?: ReportFilters) => {
+  const params = new URLSearchParams();
+  
+  if (filters?.startDate) params.append('startDate', filters.startDate);
+  if (filters?.endDate) params.append('endDate', filters.endDate);
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.technician) params.append('technician', filters.technician);
+  
+  const queryString = params.toString();
+  const url = queryString ? `/services/report?${queryString}` : '/services/report';
+  
+  const response = await ApiClient.get(url);
+  return response.data.data.report;
+};
+
+// Bulk update services
+export const bulkUpdateServices = async (data: { 
+  serviceIds: string[]; 
+  updateData: { action?: string; serviceCost?: number } 
+}) => {
+  const response = await ApiClient.patch('/services/bulk-update', data);
+  return response.data;
 };

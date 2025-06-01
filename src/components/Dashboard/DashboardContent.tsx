@@ -1,82 +1,111 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Link from 'next/link';
 import { 
-  Plus, 
-  Search, 
-  IndianRupee, 
-  Wrench,
+  Package, 
+  Clock, 
+  AlertCircle, 
   TrendingUp,
-  Users,
-  Building2 
+  Plus,
+  Eye,
+  DollarSign,
+  Calendar,
+  CalendarDays,
+  CalendarRange
 } from 'lucide-react';
 import { useServices } from '@/hooks/useServices';
 import { useTechnicians } from '@/hooks/useStaff';
-import { useUpdateServiceAction, useAssignTechnician } from '@/hooks/useServices';
-import {  formatDate } from '@/lib/utils';
-import type { ServiceFilters, Service } from '@/domain/entities/service';
+import { getStatusColor, formatDate } from '@/lib/utils';
+import type { Service } from '@/domain/entities/service';
 
 export default function DashboardContent() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<ServiceFilters>({
-    search: '',
-    status: '',
-  });
+  const { data: servicesResponse, isLoading: servicesLoading } = useServices();
+  const { data: techniciansResponse, isLoading: techLoading } = useTechnicians();
+  
+  // Safely extract data from API responses
+  const services: Service[] = servicesResponse?.data?.services || [];
+  const technicians = techniciansResponse || [];
 
-  const { data: services = [], isLoading: servicesLoading } = useServices(filters);
-  const { data: technicians = [] } = useTechnicians();
-  const updateActionMutation = useUpdateServiceAction();
-  const assignTechnicianMutation = useAssignTechnician();
-
-  const handleStatusChange = async (serviceId: string, newStatus: string) => {
-    try {
-      await updateActionMutation.mutateAsync({ id: serviceId, action: newStatus });
-    } catch (err) {
-        console.error('Error updating service status:', err);
-      // Error is handled in the mutation
-    }
-  };
-
-  const handleTechnicianChange = async (serviceId: string, technicianId: string) => {
-    try {
-      await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
-    } catch (err) {
-        console.error('Error assigning technician:', err);
-    }
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters(prev => ({ ...prev, search: searchQuery }));
-  };
-
-  // Calculate statistics with proper typing
-  const totalServices = (services as Service[]).length;
-  const pendingServices = (services as Service[]).filter((s: Service) => 
-    !['Completed', 'Cancelled', 'Delivered'].includes(s.action)
+  // Calculate statistics
+  const totalServices = services.length;
+  const pendingServices = services.filter(service => 
+    ['Received', 'Under Inspection', 'Waiting for Customer Approval'].includes(service.action)
   ).length;
-  const completedServices = (services as Service[]).filter((s: Service) => s.action === 'Completed').length;
+  const inProgressServices = services.filter(service => 
+    ['Assigned to Technician', 'Approved', 'In Service'].includes(service.action)
+  ).length;
+  const completedServices = services.filter(service => 
+    service.action === 'Completed'
+  ).length;
 
-  if (servicesLoading) {
+  // Revenue calculations
+  const calculateRevenue = (period: 'today' | 'week' | 'month') => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let filterDate: Date;
+    switch (period) {
+      case 'today':
+        filterDate = startOfToday;
+        break;
+      case 'week':
+        filterDate = startOfWeek;
+        break;
+      case 'month':
+        filterDate = startOfMonth;
+        break;
+    }
+
+    const filteredServices = services.filter(service => {
+      // Only count completed services with service cost
+      if (service.action !== 'Completed' || !service.serviceCost) return false;
+      
+      // Use deliveredDate if available, otherwise use updatedAt
+      const serviceDate = service.deliveredDate ? new Date(service.deliveredDate) : new Date(service.updatedAt);
+      return serviceDate >= filterDate;
+    });
+
+    const totalRevenue = filteredServices.reduce((sum, service) => sum + (service.serviceCost || 0), 0);
+    const serviceCount = filteredServices.length;
+
+    return { totalRevenue, serviceCount };
+  };
+
+  const todayRevenue = calculateRevenue('today');
+  const weeklyRevenue = calculateRevenue('week');
+  const monthlyRevenue = calculateRevenue('month');
+
+  // Total all-time revenue
+  const totalRevenue = services
+    .filter(service => service.action === 'Completed' && service.serviceCost)
+    .reduce((sum, service) => sum + (service.serviceCost || 0), 0);
+
+  // Recent services (last 5)
+  const recentServices = services
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
+
+  if (servicesLoading || techLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Welcome back! Here&apos;s your service overview.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Welcome back! Here&apos;s what&apos;s happening today.</p>
         </div>
         <Link href="/services/create">
-          <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
+          <Button className="bg-red-600 hover:bg-red-700">
             <Plus className="h-4 w-4 mr-2" />
             New Service
           </Button>
@@ -84,343 +113,257 @@ export default function DashboardContent() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Revenue Card */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">₹54,550</p>
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  +8.4% from last month
-                </p>
-              </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
-              </div>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Services</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalServices}</div>
+            <p className="text-xs text-muted-foreground">All time services</p>
           </CardContent>
         </Card>
 
-        {/* Total Services */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Services</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalServices}</p>
-                <p className="text-xs text-blue-600">All time</p>
-              </div>
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-              </div>
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{pendingServices}</div>
+            <p className="text-xs text-muted-foreground">Awaiting action</p>
           </CardContent>
         </Card>
 
-        {/* Pending Services */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{pendingServices}</p>
-                <p className="text-xs text-orange-600">Need attention</p>
-              </div>
-              <div className="bg-orange-100 p-3 rounded-full">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-              </div>
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <AlertCircle className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{inProgressServices}</div>
+            <p className="text-xs text-muted-foreground">Being worked on</p>
           </CardContent>
         </Card>
 
-        {/* Completed Services */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{completedServices}</p>
-                <p className="text-xs text-green-600">This month</p>
-              </div>
-              <div className="bg-purple-100 p-3 rounded-full">
-                <Building2 className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-              </div>
-            </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">₹{totalRevenue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">All time earnings</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search services by ID, customer name, or product..."
-                className="pl-10 h-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button type="submit" variant="outline" className="w-full sm:w-auto">
-              Search
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Recent Services */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle className="text-lg sm:text-xl font-semibold">Recent Services</CardTitle>
-            <Link href="/services">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                View All
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {/* Desktop Table Header */}
-          <div className="hidden md:grid bg-red-600 text-white px-6 py-3 grid-cols-6 gap-4 text-sm font-medium">
-            <div>Service ID</div>
-            <div>Customer</div>
-            <div>Product</div>
-            <div>Technician</div>
-            <div>Status</div>
-            <div>Date</div>
-          </div>
-
-          {/* Table Body */}
-          <div className="divide-y divide-gray-200">
-            {(services as Service[]).slice(0, 5).map((service: Service) => (
-              <div key={service._id} className="p-4 sm:p-6">
-                {/* Mobile Layout */}
-                <div className="md:hidden space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-gray-900 break-words">{service.serviceId}</div>
-                      <div className="text-sm text-gray-500 break-words">{service.customerName}</div>
-                      <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Product: </span>
-                      <span className="text-sm text-gray-900">
-                        {service.productDetails[0]?.productName || 'N/A'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Date: </span>
-                      <span className="text-sm text-gray-900">{formatDate(service.createdAt)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <Select 
-  value={service.technician?._id || "unassigned"}
-  onValueChange={(value) => {
-    if (value !== "unassigned") {
-      handleTechnicianChange(service._id, value);
-    }
-  }}
->
-  <SelectTrigger className="w-full h-9">
-    <SelectValue placeholder="Assign" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="unassigned">Unassigned</SelectItem>
-    {technicians.map((tech) => (
-      <SelectItem key={tech._id} value={tech._id}>
-        {tech.staffName}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-
-{/* Technician Assignment - Mobile Layout */}
-<Select 
-  value={service.technician?._id || "unassigned"}
-  onValueChange={(value) => {
-    if (value !== "unassigned") {
-      handleTechnicianChange(service._id, value);
-    }
-  }}
->
-  <SelectTrigger className="w-full h-9">
-    <SelectValue placeholder="Assign Technician" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="unassigned">Unassigned</SelectItem>
-    {technicians.map((tech) => (
-      <SelectItem key={tech._id} value={tech._id}>
-        {tech.staffName}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
-                    <Select 
-                      value={service.action}
-                      onValueChange={(value) => handleStatusChange(service._id, value)}
-                    >
-                      <SelectTrigger className="w-full h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Received">Received</SelectItem>
-                        <SelectItem value="Assigned to Technician">Assigned</SelectItem>
-                        <SelectItem value="Under Inspection">Inspection</SelectItem>
-                        <SelectItem value="Waiting for Customer Approval">Waiting</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="In Service">In Service</SelectItem>
-                        <SelectItem value="Finished">Finished</SelectItem>
-                        <SelectItem value="Delivered">Delivered</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Desktop Layout */}
-                <div className="hidden md:grid grid-cols-6 gap-4 items-center hover:bg-gray-50 transition-colors">
-                  <div className="font-medium text-gray-900 break-all font-mono text-sm">
-                    {service.serviceId}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900 break-words">{service.customerName}</div>
-                    <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900 break-words">
-                      {service.productDetails[0]?.productName || 'N/A'}
-                    </div>
-                    <div className="text-sm text-gray-500 break-words">
-                      {service.productDetails[0]?.brand || ''}
-                    </div>
-                  </div>
-                  <div>
-                    <Select 
-                      value={service.technician?._id || ""}
-                      onValueChange={(value) => handleTechnicianChange(service._id, value)}
-                    >
-                      <SelectTrigger className="w-full h-9">
-                        <SelectValue placeholder="Assign" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {technicians.map((tech) => (
-                          <SelectItem key={tech._id} value={tech._id}>
-                            {tech.staffName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Select 
-                      value={service.action}
-                      onValueChange={(value) => handleStatusChange(service._id, value)}
-                    >
-                      <SelectTrigger className="w-full h-9">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Received">Received</SelectItem>
-                        <SelectItem value="Assigned to Technician">Assigned</SelectItem>
-                        <SelectItem value="Under Inspection">Inspection</SelectItem>
-                        <SelectItem value="Waiting for Customer Approval">Waiting</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="In Service">In Service</SelectItem>
-                        <SelectItem value="Finished">Finished</SelectItem>
-                        <SelectItem value="Delivered">Delivered</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {formatDate(service.createdAt)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {(services as Service[]).length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
-              <p className="text-gray-500 mb-4">Get started by creating your first service.</p>
-              <Link href="/services/create">
-                <Button className="bg-red-600 hover:bg-red-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Service
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Services */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Services</CardTitle>
+              <Link href="/services">
+                <Button variant="outline" size="sm">
+                  <Eye className="h-4 w-4 mr-2" />
+                  View All
                 </Button>
               </Link>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {recentServices.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>No services found</p>
+                <Link href="/services/create">
+                  <Button className="mt-4 bg-red-600 hover:bg-red-700">
+                    Create First Service
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentServices.map((service) => (
+                  <div key={service._id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="font-medium text-gray-900 font-mono text-sm">
+                          {service.serviceId}
+                        </div>
+                        <Badge className={getStatusColor(service.action)}>
+                          {service.action}
+                        </Badge>
+                        {service.serviceCost && (
+                          <span className="text-sm font-medium text-green-600">
+                            ₹{service.serviceCost}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {service.customerName} • {service.location}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatDate(service.createdAt)}
+                      </div>
+                    </div>
+                    <Link href={`/services/view/${service._id}`}>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Quick Stats with Revenue Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Quick Stats & Revenue
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Revenue Overview with Tabs */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Revenue Overview</h4>
+              <Tabs defaultValue="today" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="today" className="text-xs">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    Today
+                  </TabsTrigger>
+                  <TabsTrigger value="week" className="text-xs">
+                    <CalendarDays className="h-3 w-3 mr-1" />
+                    Week
+                  </TabsTrigger>
+                  <TabsTrigger value="month" className="text-xs">
+                    <CalendarRange className="h-3 w-3 mr-1" />
+                    Month
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="today" className="mt-3">
+                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                    <div className="text-2xl font-bold text-green-700">
+                      ₹{todayRevenue.totalRevenue.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-green-600">
+                      {todayRevenue.serviceCount} completed services today
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="week" className="mt-3">
+                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="text-2xl font-bold text-blue-700">
+                      ₹{weeklyRevenue.totalRevenue.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      {weeklyRevenue.serviceCount} completed services this week
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="month" className="mt-3">
+                  <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                    <div className="text-2xl font-bold text-purple-700">
+                      ₹{monthlyRevenue.totalRevenue.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-purple-600">
+                      {monthlyRevenue.serviceCount} completed services this month
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-gray-900 mb-3">General Stats</h4>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Total Technicians</span>
+                  <span className="font-medium">{technicians.length}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Completion Rate</span>
+                  <span className="font-medium text-green-600">
+                    {totalServices > 0 ? Math.round((completedServices / totalServices) * 100) : 0}%
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Active Services</span>
+                  <span className="font-medium text-blue-600">
+                    {totalServices - completedServices}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Avg. Service Value</span>
+                  <span className="font-medium text-green-600">
+                    ₹{completedServices > 0 ? Math.round(totalRevenue / completedServices).toLocaleString() : 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Link href="/services">
+                <Button variant="outline" className="w-full">
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  View Detailed Reports
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
-// Loading skeleton component
 function DashboardSkeleton() {
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-      {/* Header skeleton */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
         <div>
-          <Skeleton className="h-6 sm:h-8 w-32 sm:w-48 mb-2" />
-          <Skeleton className="h-4 w-48 sm:w-64" />
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
         </div>
-        <Skeleton className="h-10 w-full sm:w-32" />
+        <Skeleton className="h-10 w-32" />
       </div>
 
-      {/* Stats skeleton */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-6 sm:h-8 w-16" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-10 w-10 sm:h-12 sm:w-12 rounded-full" />
-              </div>
+            <CardContent className="p-6">
+              <Skeleton className="h-16 w-full" />
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Search skeleton */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
-
-      {/* Table skeleton */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="space-y-4 p-4 sm:p-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardContent className="p-6">
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

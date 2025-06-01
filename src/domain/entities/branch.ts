@@ -1,3 +1,33 @@
+// import { BaseEntity } from './common';
+// import { Staff } from './staff';
+
+// export interface Branch extends BaseEntity {
+//   branchName: string;
+//   phoneNumber: string;
+//   location: string;
+//   staffName: Staff[];
+//   status: BranchStatus;
+//   address: string;
+// }
+
+// export type BranchStatus = 'Active' | 'Inactive';
+
+// export interface CreateBranchRequest {
+//   branchName: string;
+//   phoneNumber: string;
+//   location: string;
+//   address: string;
+//   status?: BranchStatus;
+// }
+
+// export interface UpdateBranchRequest {
+//   branchName?: string;
+//   phoneNumber?: string;
+//   location?: string;
+//   address?: string;
+//   status?: BranchStatus;
+// }
+
 import { BaseEntity } from './common';
 import { Staff } from './staff';
 
@@ -8,6 +38,10 @@ export interface Branch extends BaseEntity {
   staffName: Staff[];
   status: BranchStatus;
   address: string;
+  // Additional fields for UI
+  contactNumber?: string; // Alias for phoneNumber
+  manager?: string; // Optional manager name
+  isActive?: boolean; // Computed from status
 }
 
 export type BranchStatus = 'Active' | 'Inactive';
@@ -26,4 +60,8 @@ export interface UpdateBranchRequest {
   location?: string;
   address?: string;
   status?: BranchStatus;
+  // UI helper fields
+  contactNumber?: string;
+  manager?: string;
+  isActive?: boolean;
 }

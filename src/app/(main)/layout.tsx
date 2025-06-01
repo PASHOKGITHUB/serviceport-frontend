@@ -11,13 +11,16 @@ export default function MainLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="lg:ml-64">
           <Header />
-          <main className="flex-1 p-4 sm:p-6 overflow-auto">
-            <div className="max-w-7xl mx-auto">
-              {children}
+          {/* Main content area with proper spacing */}
+          <main className="pt-16 min-h-[calc(100vh-4rem)]">
+            <div className="p-4 sm:p-6">
+              <div className="max-w-7xl mx-auto">
+                {children}
+              </div>
             </div>
           </main>
         </div>

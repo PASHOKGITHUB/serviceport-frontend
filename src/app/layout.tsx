@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ServiceHub - Service Management System",
+  title: "ServicePort - Service Management System",
   description: "Complete service management solution for businesses",
 };
 

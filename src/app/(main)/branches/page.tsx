@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import BranchesList from '@/components/Branches/BranchesList';
 
 export const metadata: Metadata = {
-  title: 'Branches - ServiceHub',
+  title: 'Branches - ServicePort',
   description: 'Manage branch locations',
 };
 

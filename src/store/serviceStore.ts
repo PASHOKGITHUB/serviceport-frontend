@@ -8,7 +8,7 @@ interface ServiceState {
 
 export const useServiceStore = create<ServiceState>((set) => ({
   filters: {
-    status: '', // Keep empty for API
+    status: undefined, // Keep undefined for API
     branch: '', // Keep empty for API
     search: '',
   },

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import CreateServiceForm from '@/components/Services/CreateServiceForm';
 
 export const metadata: Metadata = {
-  title: 'Create Service - ServiceHub',
+  title: 'Create Service - ServicePort',
   description: 'Create a new service request',
 };
 

@@ -7,21 +7,29 @@ import {
   updateService,
   updateServiceAction,
   assignTechnician,
+  updateServiceCost,
   deleteService,
   getServiceStats
 } from '@/instance/services';
 import type { 
   CreateServiceRequest, 
   UpdateServiceRequest, 
-  ServiceFilters,
-  Service
+  ServiceFilters
 } from '@/domain/entities/service';
+
+// API Response type
+interface ApiResponse<T> {
+  status: 'success' | 'error';
+  message?: string;
+  data?: T;
+  results?: number;
+}
 
 // Query Keys
 export const serviceKeys = {
   all: ['services'] as const,
   lists: () => [...serviceKeys.all, 'list'] as const,
-  list: (filters: ServiceFilters) => [...serviceKeys.lists(), filters] as const,
+  list: (filters?: ServiceFilters) => [...serviceKeys.lists(), filters || 'all'] as const,
   details: () => [...serviceKeys.all, 'detail'] as const,
   detail: (id: string) => [...serviceKeys.details(), id] as const,
   stats: () => [...serviceKeys.all, 'stats'] as const,
@@ -29,8 +37,8 @@ export const serviceKeys = {
 
 // Get all services
 export const useServices = (filters?: ServiceFilters) => {
-  return useQuery<Service[]>({
-    queryKey: serviceKeys.list(filters || {}),
+  return useQuery({
+    queryKey: serviceKeys.list(filters),
     queryFn: () => getServices(filters),
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
@@ -38,7 +46,7 @@ export const useServices = (filters?: ServiceFilters) => {
 
 // Get single service
 export const useService = (id: string) => {
-  return useQuery<Service>({
+  return useQuery({
     queryKey: serviceKeys.detail(id),
     queryFn: () => getService(id),
     enabled: !!id,
@@ -56,8 +64,9 @@ export const useCreateService = () => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       toast.success('Service created successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to create service';
+      toast.error(message);
     },
   });
 };
@@ -69,39 +78,43 @@ export const useUpdateService = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateServiceRequest }) => 
       updateService(id, data),
-    onSuccess: (updatedService: Service) => {
-      // React Query automatically updates the cache
+    onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.setQueryData(
-        serviceKeys.detail(updatedService._id), 
-        updatedService
-      );
+      if (response?.data?.service?._id) {
+        queryClient.setQueryData(
+          serviceKeys.detail(response.data.service._id), 
+          response.data.service
+        );
+      }
       toast.success('Service updated successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to update service';
+      toast.error(message);
     },
   });
 };
 
-// Update service action
+// Update service action/status
 export const useUpdateServiceAction = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: string }) =>
-      updateServiceAction(id, action),
-    onSuccess: (updatedService: Service) => {
-      // Let React Query handle the cache updates
+      updateServiceAction(id, { action }),
+    onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.setQueryData(
-        serviceKeys.detail(updatedService._id), 
-        updatedService
-      );
+      if (response?.data?.service?._id) {
+        queryClient.setQueryData(
+          serviceKeys.detail(response.data.service._id), 
+          response.data.service
+        );
+      }
       toast.success('Service status updated successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to update service status';
+      toast.error(message);
     },
   });
 };
@@ -112,18 +125,44 @@ export const useAssignTechnician = () => {
   
   return useMutation({
     mutationFn: ({ id, technicianId }: { id: string; technicianId: string }) =>
-      assignTechnician(id, technicianId),
-    onSuccess: (updatedService: Service) => {
-      // React Query handles cache updates automatically
+      assignTechnician(id, { technicianId }),
+    onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
-      queryClient.setQueryData(
-        serviceKeys.detail(updatedService._id), 
-        updatedService
-      );
+      if (response?.data?.service?._id) {
+        queryClient.setQueryData(
+          serviceKeys.detail(response.data.service._id), 
+          response.data.service
+        );
+      }
       toast.success('Technician assigned successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to assign technician';
+      toast.error(message);
+    },
+  });
+};
+
+// Update service cost
+export const useUpdateServiceCost = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, serviceCost }: { id: string; serviceCost: number }) =>
+      updateServiceCost(id, { serviceCost }),
+    onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
+      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      if (response?.data?.service?._id) {
+        queryClient.setQueryData(
+          serviceKeys.detail(response.data.service._id), 
+          response.data.service
+        );
+      }
+      toast.success('Service cost updated successfully!');
+    },
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to update service cost';
+      toast.error(message);
     },
   });
 };
@@ -135,13 +174,13 @@ export const useDeleteService = () => {
   return useMutation({
     mutationFn: (id: string) => deleteService(id),
     onSuccess: (_, deletedId: string) => {
-      // Remove from React Query cache
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       queryClient.removeQueries({ queryKey: serviceKeys.detail(deletedId) });
       toast.success('Service deleted successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
+    onError: (error: ApiResponse<unknown>) => {
+      const message = error?.message || 'Failed to delete service';
+      toast.error(message);
     },
   });
 };

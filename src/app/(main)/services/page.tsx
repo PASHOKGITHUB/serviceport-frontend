@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import ServicesList from '@/components/Services/ServicesList';
 
 export const metadata: Metadata = {
-  title: 'Services - ServiceHub',
+  title: 'Services - ServicePort',
   description: 'Manage service requests and tracking',
 };
 

@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 
 interface HeaderProps {
   title?: string;
@@ -26,10 +26,25 @@ export default function Header({ title }: HeaderProps) {
     logoutMutation.mutate();
   };
 
+  const handleMobileMenuClick = () => {
+    // Placeholder for mobile menu functionality
+    console.log('Mobile menu clicked');
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-      <div className="flex items-center justify-between">
+    <header className="fixed top-0 right-0 left-0 lg:left-64 bg-white border-b border-gray-200 h-16 z-30">
+      <div className="flex items-center justify-between h-full px-4 sm:px-6">
         <div className="flex items-center gap-4 min-w-0 flex-1">
+          {/* Mobile menu button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={handleMobileMenuClick}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          
           {title && (
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 truncate">{title}</h1>
           )}

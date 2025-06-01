@@ -1,31 +1,35 @@
+// src/middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Get token from cookies
   const token = request.cookies.get('token')?.value;
   
   // Public routes that don't require authentication
-  const isAuthRoute = pathname.startsWith('/auth');
+  const publicRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password'];
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
   
-  // Skip middleware for static files and API routes
-  if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
-    return NextResponse.next();
-  }
-  
-  console.log(`Middleware: ${pathname}, token: ${!!token}`); // Debug log
+  // Protected routes that require authentication
+  const protectedRoutes = ['/dashboard', '/services', '/staff', '/branches', '/reports'];
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
   
   // If no token and trying to access protected route, redirect to login
-  if (!token && !isAuthRoute) {
-    console.log('Redirecting to login - no token');
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+  if (!token && isProtectedRoute) {
+    const loginUrl = new URL('/auth/login', request.url);
+    if (pathname !== '/') {
+      loginUrl.searchParams.set('redirect', pathname);
+    }
+    return NextResponse.redirect(loginUrl);
   }
   
-  // If has token and trying to access auth pages, redirect to dashboard
-  if (token && isAuthRoute) {
-    console.log('Redirecting to dashboard - has token');
+  // If has token and trying to access public auth pages, redirect to dashboard
+  if (token && isPublicRoute) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+  
+  // Redirect root to dashboard if authenticated
+  if (token && pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   
@@ -40,7 +44,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - Any file with an extension (like .png, .css, .js)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };

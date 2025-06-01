@@ -40,8 +40,8 @@ export default function LoginForm() {
         <CardHeader className="text-center space-y-4">
           <div className="mb-4">
             <div className="font-bold text-2xl sm:text-3xl">
-              <span className="text-red-600">SERVICE</span>
-              <span className="text-gray-900">HUB</span>
+              <span className="text-red-600">CAMERA</span>
+              <span className="text-gray-900"> PORT</span>
             </div>
           </div>
           <CardTitle className="text-xl sm:text-2xl">Welcome Back</CardTitle>

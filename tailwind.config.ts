@@ -36,7 +36,7 @@ const config: Config = {
           foreground: 'hsl(var(--popover-foreground))'
         },
         primary: {
-          DEFAULT: '#dc2626', // ServiceHub red
+          DEFAULT: '#dc2626', // ServicePort red
           foreground: 'hsl(var(--primary-foreground))'
         },
         secondary: {
