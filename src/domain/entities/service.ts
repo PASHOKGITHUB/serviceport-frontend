@@ -56,11 +56,11 @@ export interface Service {
   receivedDate: string | Date;
   deliveredDate?: string | Date;
   productDetails: ProductDetails[];
+  branchId: string | Branch; // Can be either string or populated Branch object
   createdAt: string | Date;
   updatedAt: string | Date;
   createdBy?: User;
   updatedBy?: User;
-  branchId?: string;
   __v?: number;
 }
 
@@ -70,7 +70,7 @@ export interface CreateServiceRequest {
   address: string;
   location: string;
   productDetails: Omit<ProductDetails, '_id'>[];
-  branchId: string;
+  branchId: string; // Required branch ID
   serviceCost?: number;
 }
 
@@ -84,6 +84,7 @@ export interface UpdateServiceRequest {
   technician?: string;
   action?: ServiceAction;
   deliveredDate?: string | Date;
+  branchId?: string; // Optional for updates
 }
 
 export interface ServiceFilters {
@@ -104,6 +105,10 @@ export interface ServiceStats {
   statusBreakdown: {
     [key in ServiceAction]: number;
   };
+  branchStats: {
+    branchName: string;
+    count: number;
+  }[];
   technicianStats: {
     technician: Staff;
     assignedServices: number;
@@ -156,3 +161,19 @@ export interface ServiceStatsResponse extends ApiResponse<{ stats: ServiceStats 
 export interface ServiceReportResponse extends ApiResponse<{ report: ServiceReport }> {
   data: { report: ServiceReport };
 }
+
+// Helper function to get branch name from Service object
+export const getBranchName = (service: Service): string => {
+  if (typeof service.branchId === 'object' && service.branchId.branchName) {
+    return service.branchId.branchName;
+  }
+  return 'Unknown Branch';
+};
+
+// Helper function to get branch location from Service object
+export const getBranchLocation = (service: Service): string => {
+  if (typeof service.branchId === 'object' && service.branchId.location) {
+    return service.branchId.location;
+  }
+  return 'Unknown Location';
+};

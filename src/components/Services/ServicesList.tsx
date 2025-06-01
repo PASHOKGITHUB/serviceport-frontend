@@ -15,7 +15,8 @@ import {
   IndianRupee, 
   MoreHorizontal, 
   Search, 
-  X
+  X,
+  MapPin
 } from 'lucide-react';
 import { useServices, useDeleteService } from '@/hooks/useServices';
 import { useTechnicians } from '@/hooks/useStaff';
@@ -87,6 +88,26 @@ export default function ServicesList() {
   const updateCostMutation = useUpdateServiceCost();
   const deleteServiceMutation = useDeleteService();
 
+  // Helper function to get branch name
+  const getBranchName = (service: Service): string => {
+    if (typeof service.branchId === 'object' && service.branchId?.branchName) {
+      return service.branchId.branchName;
+    }
+    // Fallback to find branch name from branches array
+    const branch = branches.find(b => b._id === (typeof service.branchId === 'string' ? service.branchId : service.branchId?._id));
+    return branch?.branchName || 'Unknown Branch';
+  };
+
+  // Helper function to get branch location
+  const getBranchLocation = (service: Service): string => {
+    if (typeof service.branchId === 'object' && service.branchId?.location) {
+      return service.branchId.location;
+    }
+    // Fallback to find branch location from branches array
+    const branch = branches.find(b => b._id === (typeof service.branchId === 'string' ? service.branchId : service.branchId?._id));
+    return branch?.location || 'Unknown Location';
+  };
+
   // Filter services based on all criteria
   const filteredServices = useMemo(() => {
     let filtered = [...allServices];
@@ -99,6 +120,7 @@ export default function ServicesList() {
         service.customerName.toLowerCase().includes(query) ||
         service.customerContactNumber.includes(query) ||
         service.location.toLowerCase().includes(query) ||
+        getBranchName(service).toLowerCase().includes(query) ||
         service.productDetails.some((product: ProductDetails) => 
           product.productName.toLowerCase().includes(query) ||
           product.brand.toLowerCase().includes(query)
@@ -106,11 +128,15 @@ export default function ServicesList() {
       );
     }
 
-    // Branch filter
+    // Branch filter - FIXED TO HANDLE BOTH STRING AND POPULATED OBJECT
     if (selectedBranch !== 'all') {
-      filtered = filtered.filter(service => 
-        service.branchId === selectedBranch
-      );
+      filtered = filtered.filter(service => {
+        // Handle both string branchId and populated branch object
+        const serviceBranchId = typeof service.branchId === 'string' 
+          ? service.branchId 
+          : service.branchId?._id;
+        return serviceBranchId === selectedBranch;
+      });
     }
 
     // Action filter
@@ -144,7 +170,7 @@ export default function ServicesList() {
     }
 
     return filtered;
-  }, [allServices, searchQuery, selectedBranch, selectedAction, timeFilter]);
+  }, [allServices, searchQuery, selectedBranch, selectedAction, timeFilter, branches]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -261,7 +287,7 @@ export default function ServicesList() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search by Service ID, Customer, Phone, Product..."
+                placeholder="Search by Service ID, Customer, Phone, Product, Branch..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -333,11 +359,12 @@ export default function ServicesList() {
 
       {/* Services Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {/* Desktop Table Header */}
-        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
+        {/* Desktop Table Header - Updated with Branch Column */}
+        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
           <div className="text-center">Service ID</div>
           <div className="text-center">Customer</div>
           <div className="text-center">Phone</div>
+          <div className="text-center">Branch</div>
           <div className="text-center">Product</div>
           <div className="text-center">Technician</div>
           <div className="text-center">Action</div>
@@ -358,6 +385,10 @@ export default function ServicesList() {
                     <div className="text-sm text-gray-900 break-words">{service.customerName}</div>
                     <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
                     <div className="text-sm text-gray-500 break-words">{service.location}</div>
+                    <div className="flex items-center gap-1 text-sm text-blue-600 mt-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>{getBranchName(service)} - {getBranchLocation(service)}</span>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2 items-end">
                     <Badge className={getStatusColor(service.action)} variant="outline">
@@ -496,8 +527,8 @@ export default function ServicesList() {
                 </div>
               </div>
 
-              {/* Desktop Layout - Properly Centered */}
-              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
+              {/* Desktop Layout - Updated with Branch Column */}
+              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
                 <div className="font-medium text-gray-900 break-all font-mono text-sm flex justify-center">
                   {service.serviceId}
                 </div>
@@ -506,6 +537,13 @@ export default function ServicesList() {
                   <div className="text-sm text-gray-500 break-words">{service.location}</div>
                 </div>
                 <div className="text-gray-900 break-all flex justify-center items-center">{service.customerContactNumber}</div>
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="font-medium text-gray-900 break-words flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-blue-600" />
+                    {getBranchName(service)}
+                  </div>
+                  <div className="text-sm text-gray-500 break-words">{getBranchLocation(service)}</div>
+                </div>
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="font-medium text-gray-900 break-words">
                     {service.productDetails[0]?.productName || 'N/A'}
