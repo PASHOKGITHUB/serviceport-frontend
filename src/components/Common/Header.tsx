@@ -51,45 +51,45 @@ export default function Header({ title }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          <div className="text-right hidden sm:block">
+            <div className="font-medium text-gray-900 text-sm">
+              {user?.userName || 'Daniel Roberts'}
+            </div>
+            <div className="text-xs text-gray-500">
+              Receptionist
+            </div>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2">
-                <div className="text-right hidden sm:block">
-                  <div className="font-medium text-gray-900 text-sm">
-                    {user?.userName || 'User'}
-                  </div>
-                  <div className="text-xs text-gray-500 capitalize">
-                    {user?.role || 'Staff'}
-                  </div>
-                </div>
                 <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                   <AvatarImage src="/placeholder.svg" />
-                  <AvatarFallback className="bg-red-100 text-red-600 text-xs sm:text-sm">
-                    {user?.userName?.slice(0, 2).toUpperCase() || 'U'}
+                  <AvatarFallback className="bg-amber-600 text-white text-xs sm:text-sm">
+                    {user?.userName?.slice(0, 2).toUpperCase() || 'DR'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200 shadow-lg">
+              <DropdownMenuLabel className="text-gray-900">
                 <div className="sm:hidden">
                   <div className="font-medium text-gray-900">
-                    {user?.userName || 'User'}
+                    {user?.userName || 'Daniel Roberts'}
                   </div>
-                  <div className="text-sm text-gray-500 capitalize">
-                    {user?.role || 'Staff'}
+                  <div className="text-sm text-gray-500">
+                    Receptionist
                   </div>
                 </div>
                 <div className="hidden sm:block">My Account</div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 text-gray-900">
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuItem 
-                className="cursor-pointer text-red-600"
+                className="cursor-pointer text-red-600 hover:bg-red-50 focus:bg-red-50"
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
               >

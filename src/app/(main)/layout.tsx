@@ -11,7 +11,7 @@ export default function MainLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-100">
         <Sidebar />
         <div className="lg:ml-64">
           <Header />

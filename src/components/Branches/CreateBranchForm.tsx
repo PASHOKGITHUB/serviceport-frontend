@@ -31,7 +31,7 @@ export default function CreateBranchForm() {
       await createBranchMutation.mutateAsync(formData);
       router.push('/branches');
     } catch (err) {
-        console.error('Error creating branch:', err);
+      console.error('Error creating branch:', err);
       // Error is handled in the mutation
     }
   };
@@ -42,79 +42,79 @@ export default function CreateBranchForm() {
       <div className="flex items-center gap-2 text-sm">
         <Link href="/branches" className="text-gray-600 hover:text-gray-900">Branches</Link>
         <ChevronRight className="h-4 w-4 text-gray-400" />
-        <span className="text-red-600 font-medium">Add Branch Details</span>
+        <span className="text-amber-700 font-medium">Add Branch Details</span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Create New Branch</h1>
+          <h1 className="text-3xl font-bold text-black">Create New Branch</h1>
           <div className="flex gap-3">
             <Button 
               type="submit" 
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-amber-700 hover:bg-amber-800 text-white"
               disabled={createBranchMutation.isPending}
             >
               {createBranchMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
             <Link href="/branches">
-              <Button type="button" variant="outline">Cancel</Button>
+              <Button type="button" variant="outline" className="border-gray-300">Cancel</Button>
             </Link>
           </div>
         </div>
 
         {/* Branch Details Form */}
         <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader className="bg-gray-50">
-              <CardTitle className="text-lg text-center">Branch Details</CardTitle>
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="text-lg text-center text-black">Branch Details</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-6 space-y-6 bg-white">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="branchName">Branch Name *</Label>
+                  <Label htmlFor="branchName" className="text-black">Branch Name *</Label>
                   <Input
                     id="branchName"
                     value={formData.branchName}
                     onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
                     placeholder="Enter branch name"
-                    className="mt-2"
+                    className="mt-2 border-gray-300"
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contactNumber">Contact Number *</Label>
+                  <Label htmlFor="contactNumber" className="text-black">Contact Number *</Label>
                   <Input
                     id="contactNumber"
                     value={formData.phoneNumber}
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                     placeholder="Enter contact number"
-                    className="mt-2"
+                    className="mt-2 border-gray-300"
                     required
                   />
                 </div>
               </div>
               
               <div>
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="location" className="text-black">Location *</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="Enter location"
-                  className="mt-2"
+                  className="mt-2 border-gray-300"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address" className="text-black">Address *</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Enter full address including building, street, city, pin code"
-                  className="mt-2 min-h-[100px]"
+                  className="mt-2 min-h-[100px] border-gray-300"
                   required
                 />
               </div>

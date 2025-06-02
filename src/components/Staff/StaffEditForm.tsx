@@ -94,10 +94,10 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
   if (!staff) {
     return (
       <div className="text-center py-12 px-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Staff member not found</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-black mb-2">Staff member not found</h2>
         <p className="text-gray-600 mb-4">The staff member you&apos;re trying to edit doesn&apos;t exist.</p>
         <Link href="/staff">
-          <Button className="bg-red-600 hover:bg-red-700">
+          <Button className="bg-amber-700 hover:bg-amber-800 text-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Staff
           </Button>
@@ -112,13 +112,13 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
           <Link href="/staff">
-            <Button variant="outline" size="sm" className="mb-2 sm:mb-0">
+            <Button variant="outline" size="sm" className="mb-2 sm:mb-0 border-gray-300">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black break-words">
               Edit Staff Member
             </h1>
             <p className="text-gray-600 text-sm sm:text-base break-words">
@@ -130,29 +130,31 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Personal Information */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Personal Information</CardTitle>
+        <Card className="hover:shadow-sm transition-shadow border-gray-200">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Personal Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-white">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="staffName">Staff Name *</Label>
+                <Label htmlFor="staffName" className="text-black">Staff Name *</Label>
                 <Input
                   id="staffName"
                   value={formData.staffName}
                   onChange={(e) => handleInputChange('staffName', e.target.value)}
                   placeholder="Enter staff name"
+                  className="border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number *</Label>
+                <Label htmlFor="contactNumber" className="text-black">Contact Number *</Label>
                 <Input
                   id="contactNumber"
                   value={formData.contactNumber}
                   onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                   placeholder="Enter contact number"
+                  className="border-gray-300"
                   required
                 />
               </div>
@@ -161,46 +163,47 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
         </Card>
 
         {/* Professional Information */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Professional Information</CardTitle>
+        <Card className="hover:shadow-sm transition-shadow border-gray-200">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Professional Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-white">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
+                <Label htmlFor="role" className="text-black">Role *</Label>
                 <Select
                   value={formData.role}
                   onValueChange={(value) => handleInputChange('role', value as 'manager' | 'technician')}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200">
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="technician">Technician</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="specialization">Specialization</Label>
+                <Label htmlFor="specialization" className="text-black">Specialization</Label>
                 <Input
                   id="specialization"
                   value={formData.specialization}
                   onChange={(e) => handleInputChange('specialization', e.target.value)}
                   placeholder="Enter specialization (optional)"
+                  className="border-gray-300"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="branch">Branch</Label>
+                <Label htmlFor="branch" className="text-black">Branch</Label>
                 <Select
                   value={formData.branch || 'none'}
                   onValueChange={(value) => handleInputChange('branch', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200">
                     <SelectItem value="none">No Branch</SelectItem>
                     {branches.map((branch) => (
                       <SelectItem key={branch._id} value={branch._id}>
@@ -211,15 +214,15 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="isActive">Status *</Label>
+                <Label htmlFor="isActive" className="text-black">Status *</Label>
                 <Select
                   value={formData.isActive ? 'active' : 'inactive'}
                   onValueChange={(value) => handleInputChange('isActive', value === 'active')}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-300">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200">
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
@@ -236,13 +239,14 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
             variant="outline"
             onClick={handleCancel}
             disabled={updateStaffMutation.isPending}
+            className="border-gray-300"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
             type="submit"
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-amber-700 hover:bg-amber-800 text-white"
             disabled={updateStaffMutation.isPending}
           >
             {updateStaffMutation.isPending ? (
@@ -265,7 +269,7 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
             variant="outline"
             onClick={handleCancel}
             disabled={updateStaffMutation.isPending}
-            className="flex-1 bg-white shadow-lg"
+            className="flex-1 bg-white shadow-lg border-gray-300"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
@@ -273,7 +277,7 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
           <Button
             type="submit"
             onClick={handleSubmit}
-            className="flex-1 bg-red-600 hover:bg-red-700 shadow-lg"
+            className="flex-1 bg-amber-700 hover:bg-amber-800 text-white shadow-lg"
             disabled={updateStaffMutation.isPending}
           >
             {updateStaffMutation.isPending ? (
@@ -298,7 +302,7 @@ function StaffEditSkeleton() {
       </div>
       <div className="space-y-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="border-gray-200">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
             </CardHeader>

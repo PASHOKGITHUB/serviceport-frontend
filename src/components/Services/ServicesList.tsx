@@ -240,13 +240,13 @@ export default function ServicesList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Services</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Services</h1>
           <p className="text-gray-600 text-sm sm:text-base">
             {hasActiveFilters ? `${filteredServices.length} of ${allServices.length}` : `${allServices.length} total`} service requests
           </p>
         </div>
         <Link href="/services/create">
-          <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
+          <Button className="bg-amber-700 hover:bg-amber-800 text-white w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             New Service
           </Button>
@@ -254,7 +254,7 @@ export default function ServicesList() {
       </div>
 
       {/* Filters Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
           {/* Search Bar - Left Side */}
           <div className="flex-1 lg:max-w-md">
@@ -264,7 +264,7 @@ export default function ServicesList() {
                 placeholder="Search by Service ID, Customer, Phone, Product..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-gray-300"
               />
             </div>
           </div>
@@ -273,10 +273,10 @@ export default function ServicesList() {
           <div className="flex items-center gap-2">
             {/* Branch Filter */}
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-gray-300">
                 <SelectValue placeholder="All Branches" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-gray-200">
                 <SelectItem value="all">All Branches</SelectItem>
                 {branches.map((branch) => (
                   <SelectItem key={branch._id} value={branch._id}>
@@ -288,10 +288,10 @@ export default function ServicesList() {
 
             {/* Action Filter */}
             <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 border-gray-300">
                 <SelectValue placeholder="All Actions" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-gray-200">
                 <SelectItem value="all">All Actions</SelectItem>
                 {ACTION_HIERARCHY.map((action) => (
                   <SelectItem key={action} value={action}>
@@ -303,10 +303,10 @@ export default function ServicesList() {
 
             {/* Time Filter */}
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-32 border-gray-300">
                 <SelectValue placeholder="Time Period" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-gray-200">
                 {TIME_FILTERS.map((filter) => (
                   <SelectItem key={filter.value} value={filter.value}>
                     {filter.label}
@@ -321,7 +321,7 @@ export default function ServicesList() {
                 variant="outline" 
                 size="sm" 
                 onClick={clearFilters}
-                className="flex items-center gap-1 whitespace-nowrap ml-2"
+                className="flex items-center gap-1 whitespace-nowrap ml-2 border-gray-300"
               >
                 <X className="h-4 w-4" />
                 Clear All
@@ -332,9 +332,9 @@ export default function ServicesList() {
       </div>
 
       {/* Services Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         {/* Desktop Table Header */}
-        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
+        <div className="hidden md:grid bg-amber-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
           <div className="text-center">Service ID</div>
           <div className="text-center">Customer</div>
           <div className="text-center">Phone</div>
@@ -345,9 +345,9 @@ export default function ServicesList() {
         </div>
 
         {/* Table Body */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-100">
           {filteredServices.map((service: Service) => (
-            <div key={service._id} className="p-4 sm:p-6">
+            <div key={service._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
               {/* Mobile Layout */}
               <div className="md:hidden space-y-3">
                 <div className="flex justify-between items-start">
@@ -395,10 +395,10 @@ export default function ServicesList() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-full h-9">
+                    <SelectTrigger className="w-full h-9 border-gray-300">
                       <SelectValue placeholder="Assign Technician" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200">
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {technicians.map((tech: Staff) => (
                         <SelectItem key={tech._id} value={tech._id}>
@@ -430,7 +430,7 @@ export default function ServicesList() {
                           <span className="truncate text-sm">{service.action}</span>
                         </div>
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white border-gray-200">
                         {getValidNextActions(service.action).map((action) => (
                           <SelectItem key={action} value={action}>
                             <div className="flex items-center gap-2">
@@ -458,12 +458,12 @@ export default function ServicesList() {
                   <div className="flex gap-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full">
+                        <Button variant="outline" size="sm" className="w-full border-gray-300">
                           <MoreHorizontal className="h-4 w-4 mr-2" />
                           More Actions
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-48">
+                      <DropdownMenuContent align="center" className="w-48 bg-white border-gray-200">
                         <DropdownMenuItem asChild>
                           <Link href={`/services/view/${service._id}`} className="flex items-center">
                             <Eye className="h-4 w-4 mr-2" />
@@ -528,10 +528,10 @@ export default function ServicesList() {
                       }
                     }}
                   >
-                    <SelectTrigger className="w-full h-9">
+                    <SelectTrigger className="w-full h-9 border-gray-300">
                       <SelectValue placeholder="Assign" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200">
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {technicians.map((tech: Staff) => (
                         <SelectItem key={tech._id} value={tech._id}>
@@ -563,7 +563,7 @@ export default function ServicesList() {
                         <span className="truncate text-sm">{service.action}</span>
                       </div>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200">
                       {getValidNextActions(service.action).map((action) => (
                         <SelectItem key={action} value={action}>
                           <div className="flex items-center gap-2">
@@ -589,11 +589,11 @@ export default function ServicesList() {
                 <div className="flex justify-center items-center">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-gray-300">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="bg-white border-gray-200">
                       <DropdownMenuItem asChild>
                         <Link href={`/services/view/${service._id}`} className="flex items-center">
                           <Eye className="h-4 w-4 mr-2" />
@@ -634,13 +634,13 @@ export default function ServicesList() {
               {hasActiveFilters ? 'No services match your filters.' : 'No services found.'}
             </div>
             {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters}>
+              <Button variant="outline" onClick={clearFilters} className="border-gray-300">
                 <X className="h-4 w-4 mr-2" />
                 Clear All Filters
               </Button>
             ) : (
               <Link href="/services/create">
-                <Button className="bg-red-600 hover:bg-red-700">
+                <Button className="bg-amber-700 hover:bg-amber-800 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Service
                 </Button>
@@ -653,32 +653,32 @@ export default function ServicesList() {
       {/* Cost Update Modal */}
       {costDialogOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4">Update Service Cost</h3>
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Update Service Cost</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="cost" className="text-sm font-medium">Service Cost (₹)</Label>
+                <Label htmlFor="cost" className="text-sm font-medium text-gray-700">Service Cost (₹)</Label>
                 <Input
                   id="cost"
                   type="number"
                   value={newCost}
                   onChange={(e) => setNewCost(e.target.value)}
                   placeholder="Enter service cost"
-                  className="mt-2"
+                  className="mt-2 border-gray-300"
                 />
               </div>
               <div className="flex gap-3">
                 <Button 
                   onClick={handleCostUpdate}
                   disabled={!newCost || updateCostMutation.isPending}
-                  className="flex-1"
+                  className="flex-1 bg-amber-700 hover:bg-amber-800 text-white"
                 >
                   {updateCostMutation.isPending ? 'Updating...' : 'Update Cost'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setCostDialogOpen(false)}
-                  className="flex-1"
+                  className="flex-1 border-gray-300"
                 >
                   Cancel
                 </Button>

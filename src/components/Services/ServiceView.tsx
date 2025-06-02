@@ -123,7 +123,7 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">Service not found</div>
           <Link href="/services">
-            <Button>Back to Services</Button>
+            <Button className="bg-amber-700 hover:bg-amber-800 text-white">Back to Services</Button>
           </Link>
         </div>
       </div>
@@ -138,13 +138,13 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
           Services
         </Link>
         <ChevronRight className="h-4 w-4 text-gray-400" />
-        <span className="text-red-600 font-medium">{service.serviceId}</span>
+        <span className="text-amber-700 font-medium font-mono">{service.serviceId}</span>
       </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">
             Service Details
           </h1>
           <p className="text-gray-600 text-sm sm:text-base font-mono">
@@ -153,13 +153,13 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <Link href={`/services/edit/${service._id}`}>
-            <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
+            <Button className="bg-amber-700 hover:bg-amber-800 text-white w-full sm:w-auto">
               <Edit className="h-4 w-4 mr-2" />
               Edit Service
             </Button>
           </Link>
           <Link href="/services">
-            <Button variant="outline" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto border-gray-300">
               Back to List
             </Button>
           </Link>
@@ -170,22 +170,22 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Information */}
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-black">
                 <User className="h-5 w-5" />
                 Customer Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 bg-white">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Customer Name</Label>
-                  <p className="text-gray-900 font-medium">{service.customerName}</p>
+                  <Label className="text-sm font-medium text-gray-600">Customer Name</Label>
+                  <p className="text-black font-medium">{service.customerName}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Contact Number</Label>
-                  <p className="text-gray-900 flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-600">Contact Number</Label>
+                  <p className="text-black flex items-center gap-2">
                     <Phone className="h-4 w-4" />
                     {service.customerContactNumber}
                   </p>
@@ -193,54 +193,54 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Location</Label>
-                  <p className="text-gray-900 flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-600">Location</Label>
+                  <p className="text-black flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     {service.location}
                   </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Address</Label>
-                  <p className="text-gray-900">{service.address}</p>
+                  <Label className="text-sm font-medium text-gray-600">Address</Label>
+                  <p className="text-black">{service.address}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Product Details */}
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-black">
                 <Package className="h-5 w-5" />
                 Product Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-6 bg-white">
               <div className="space-y-6">
                 {service.productDetails.map((product: ProductDetails, index: number) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h3 className="font-medium text-gray-900 mb-3">Product {index + 1}</h3>
+                    <h3 className="font-medium text-black mb-3">Product {index + 1}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium text-gray-500">Product Name</Label>
-                        <p className="text-gray-900">{product.productName}</p>
+                        <Label className="text-sm font-medium text-gray-600">Product Name</Label>
+                        <p className="text-black">{product.productName}</p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-500">Serial Number</Label>
-                        <p className="text-gray-900 font-mono">{product.serialNumber}</p>
+                        <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
+                        <p className="text-black font-mono">{product.serialNumber}</p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-500">Brand</Label>
-                        <p className="text-gray-900">{product.brand}</p>
+                        <Label className="text-sm font-medium text-gray-600">Brand</Label>
+                        <p className="text-black">{product.brand}</p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-gray-500">Type</Label>
-                        <p className="text-gray-900">{product.type}</p>
+                        <Label className="text-sm font-medium text-gray-600">Type</Label>
+                        <p className="text-black">{product.type}</p>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Label className="text-sm font-medium text-gray-500">Product Issue</Label>
-                      <p className="text-gray-900 mt-1">{product.productIssue}</p>
+                      <Label className="text-sm font-medium text-gray-600">Product Issue</Label>
+                      <p className="text-black mt-1">{product.productIssue}</p>
                     </div>
                   </div>
                 ))}
@@ -249,34 +249,34 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
           </Card>
 
           {/* Service Timeline */}
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-black">
                 <Calendar className="h-5 w-5" />
                 Service Timeline
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 bg-white">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Received Date</Label>
-                  <p className="text-gray-900">{formatDate(service.receivedDate || service.createdAt)}</p>
+                  <Label className="text-sm font-medium text-gray-600">Received Date</Label>
+                  <p className="text-black">{formatDate(service.receivedDate || service.createdAt)}</p>
                 </div>
                 {service.deliveredDate && (
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Delivered Date</Label>
-                    <p className="text-gray-900">{formatDate(service.deliveredDate)}</p>
+                    <Label className="text-sm font-medium text-gray-600">Delivered Date</Label>
+                    <p className="text-black">{formatDate(service.deliveredDate)}</p>
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Created Date</Label>
-                  <p className="text-gray-900">{formatDate(service.createdAt)}</p>
+                  <Label className="text-sm font-medium text-gray-600">Created Date</Label>
+                  <p className="text-black">{formatDate(service.createdAt)}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
-                  <p className="text-gray-900">{formatDate(service.updatedAt)}</p>
+                  <Label className="text-sm font-medium text-gray-600">Last Updated</Label>
+                  <p className="text-black">{formatDate(service.updatedAt)}</p>
                 </div>
               </div>
             </CardContent>
@@ -286,17 +286,17 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status & Actions */}
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-black">
                 <Settings className="h-5 w-5" />
                 Service Management
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 bg-white">
               {/* Current Status */}
               <div>
-                <Label className="text-sm font-medium text-gray-500">Current Status</Label>
+                <Label className="text-sm font-medium text-gray-600">Current Status</Label>
                 <div className="mt-2">
                   <Badge className={getStatusColor(service.action)}>
                     {service.action}
@@ -306,16 +306,16 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
 
               {/* Update Status */}
               <div>
-                <Label className="text-sm font-medium text-gray-500">Update Status</Label>
+                <Label className="text-sm font-medium text-gray-600">Update Status</Label>
                 <Select 
                   value={service.action}
                   onValueChange={handleStatusChange}
                   disabled={updateActionMutation.isPending}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-2 border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200">
                     {getValidNextStatuses(service.action).map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
@@ -327,7 +327,7 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
 
               {/* Assign Technician */}
               <div>
-                <Label className="text-sm font-medium text-gray-500">Assigned Technician</Label>
+                <Label className="text-sm font-medium text-gray-600">Assigned Technician</Label>
                 <Select 
                   value={service.technician?._id || "unassigned"}
                   onValueChange={(value) => {
@@ -337,10 +337,10 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
                   }}
                   disabled={assignTechnicianMutation.isPending}
                 >
-                  <SelectTrigger className="mt-2">
+                  <SelectTrigger className="mt-2 border-gray-300">
                     <SelectValue placeholder="Assign Technician" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200">
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {technicians.map((tech: Staff) => (
                       <SelectItem key={tech._id} value={tech._id}>
@@ -358,12 +358,12 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
 
               {/* Service Cost */}
               <div>
-                <Label className="text-sm font-medium text-gray-500">Service Cost</Label>
+                <Label className="text-sm font-medium text-gray-600">Service Cost</Label>
                 <div className="mt-2 flex items-center gap-2">
                   <Button
                     variant="outline"
                     onClick={openCostDialog}
-                    className="flex-1"
+                    className="flex-1 border-gray-300"
                   >
                     <DollarSign className="h-4 w-4 mr-2" />
                     ₹{service.serviceCost || 'Not set'}
@@ -374,32 +374,32 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
           </Card>
 
           {/* Service Information */}
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="flex items-center gap-2 text-black">
                 <FileText className="h-5 w-5" />
                 Service Information
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 bg-white">
               <div>
-                <Label className="text-sm font-medium text-gray-500">Service ID</Label>
-                <p className="text-gray-900 font-mono">{service.serviceId}</p>
+                <Label className="text-sm font-medium text-gray-600">Service ID</Label>
+                <p className="text-black font-mono">{service.serviceId}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-500">Total Products</Label>
-                <p className="text-gray-900">{service.productDetails.length}</p>
+                <Label className="text-sm font-medium text-gray-600">Total Products</Label>
+                <p className="text-black">{service.productDetails.length}</p>
               </div>
               {service.createdBy && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Created By</Label>
-                  <p className="text-gray-900">{(service.createdBy as UserType).name || 'System'}</p>
+                  <Label className="text-sm font-medium text-gray-600">Created By</Label>
+                  <p className="text-black">{(service.createdBy as UserType).name || 'System'}</p>
                 </div>
               )}
               {service.updatedBy && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Last Updated By</Label>
-                  <p className="text-gray-900">{(service.updatedBy as UserType).name || 'System'}</p>
+                  <Label className="text-sm font-medium text-gray-600">Last Updated By</Label>
+                  <p className="text-black">{(service.updatedBy as UserType).name || 'System'}</p>
                 </div>
               )}
             </CardContent>
@@ -410,32 +410,32 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
       {/* Cost Update Modal */}
       {costDialogOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">Update Service Cost</h3>
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4 text-black">Update Service Cost</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="cost" className="text-sm font-medium">Service Cost (₹)</Label>
+                <Label htmlFor="cost" className="text-sm font-medium text-gray-700">Service Cost (₹)</Label>
                 <Input
                   id="cost"
                   type="number"
                   value={newCost}
                   onChange={(e) => setNewCost(e.target.value)}
                   placeholder="Enter service cost"
-                  className="mt-2"
+                  className="mt-2 border-gray-300"
                 />
               </div>
               <div className="flex gap-3">
                 <Button 
                   onClick={handleCostUpdate}
                   disabled={!newCost || updateCostMutation.isPending}
-                  className="flex-1"
+                  className="flex-1 bg-amber-700 hover:bg-amber-800 text-white"
                 >
                   {updateCostMutation.isPending ? 'Updating...' : 'Update Cost'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setCostDialogOpen(false)}
-                  className="flex-1"
+                  className="flex-1 border-gray-300"
                 >
                   Cancel
                 </Button>
@@ -470,19 +470,19 @@ function ServiceViewSkeleton() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
+          <Card className="border-gray-200">
             <CardContent className="p-6">
               <Skeleton className="h-32 w-full" />
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-gray-200">
             <CardContent className="p-6">
               <Skeleton className="h-48 w-full" />
             </CardContent>
           </Card>
         </div>
         <div className="space-y-6">
-          <Card>
+          <Card className="border-gray-200">
             <CardContent className="p-6">
               <Skeleton className="h-64 w-full" />
             </CardContent>
