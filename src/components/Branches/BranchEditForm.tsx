@@ -87,10 +87,10 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
   if (!branch) {
     return (
       <div className="text-center py-12 px-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">Branch not found</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-black mb-2">Branch not found</h2>
         <p className="text-gray-600 mb-4">The branch you&apos;re trying to edit doesn&apos;t exist.</p>
         <Link href="/branches">
-          <Button className="bg-red-600 hover:bg-red-700">
+          <Button className="bg-amber-700 hover:bg-amber-800 text-white">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Branches
           </Button>
@@ -105,13 +105,13 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
           <Link href="/branches">
-            <Button variant="outline" size="sm" className="mb-2 sm:mb-0">
+            <Button variant="outline" size="sm" className="mb-2 sm:mb-0 border-gray-300">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 break-words">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black break-words">
               Edit Branch
             </h1>
             <p className="text-gray-600 text-sm sm:text-base break-words">
@@ -123,81 +123,86 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Basic Information</CardTitle>
+        <Card className="hover:shadow-sm transition-shadow border-gray-200">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Basic Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-white">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="branchName">Branch Name *</Label>
+                <Label htmlFor="branchName" className="text-black">Branch Name *</Label>
                 <Input
                   id="branchName"
                   value={formData.branchName}
                   onChange={(e) => handleInputChange('branchName', e.target.value)}
                   placeholder="Enter branch name"
+                  className="border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Location *</Label>
+                <Label htmlFor="location" className="text-black">Location *</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Enter location"
+                  className="border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number *</Label>
+                <Label htmlFor="contactNumber" className="text-black">Contact Number *</Label>
                 <Input
                   id="contactNumber"
                   value={formData.contactNumber}
                   onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                   placeholder="Enter contact number"
+                  className="border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="manager">Manager</Label>
+                <Label htmlFor="manager" className="text-black">Manager</Label>
                 <Input
                   id="manager"
                   value={formData.manager}
                   onChange={(e) => handleInputChange('manager', e.target.value)}
                   placeholder="Enter manager name (optional)"
+                  className="border-gray-300"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address" className="text-black">Address</Label>
               <Textarea
                 id="address"
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Enter full address (optional)"
                 rows={3}
+                className="border-gray-300"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Status */}
-        <Card className="hover:shadow-sm transition-shadow">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Status</CardTitle>
+        <Card className="hover:shadow-sm transition-shadow border-gray-200">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Status</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-white">
             <div className="space-y-2">
-              <Label htmlFor="isActive">Branch Status *</Label>
+              <Label htmlFor="isActive" className="text-black">Branch Status *</Label>
               <Select
                 value={formData.isActive ? 'active' : 'inactive'}
                 onValueChange={(value) => handleInputChange('isActive', value === 'active')}
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
@@ -213,13 +218,14 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
             variant="outline"
             onClick={handleCancel}
             disabled={updateBranchMutation.isPending}
+            className="border-gray-300"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
           <Button
             type="submit"
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-amber-700 hover:bg-amber-800 text-white"
             disabled={updateBranchMutation.isPending}
           >
             {updateBranchMutation.isPending ? (
@@ -242,7 +248,7 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
             variant="outline"
             onClick={handleCancel}
             disabled={updateBranchMutation.isPending}
-            className="flex-1 bg-white shadow-lg"
+            className="flex-1 bg-white shadow-lg border-gray-300"
           >
             <X className="h-4 w-4 mr-2" />
             Cancel
@@ -250,7 +256,7 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
           <Button
             type="submit"
             onClick={handleSubmit}
-            className="flex-1 bg-red-600 hover:bg-red-700 shadow-lg"
+            className="flex-1 bg-amber-700 hover:bg-amber-800 text-white shadow-lg"
             disabled={updateBranchMutation.isPending}
           >
             {updateBranchMutation.isPending ? (
@@ -275,7 +281,7 @@ function BranchEditSkeleton() {
       </div>
       <div className="space-y-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="border-gray-200">
             <CardHeader>
               <Skeleton className="h-6 w-48" />
             </CardHeader>

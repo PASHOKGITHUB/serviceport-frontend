@@ -64,8 +64,8 @@ export default function CreateServiceForm() {
       await createServiceMutation.mutateAsync(formData);
       router.push('/services');
     } catch (err) {
-
-      console.error('Error creating service:', err);}
+      console.error('Error creating service:', err);
+    }
   };
 
   return (
@@ -76,23 +76,23 @@ export default function CreateServiceForm() {
           Services
         </Link>
         <ChevronRight className="h-4 w-4 text-gray-400" />
-        <span className="text-red-600 font-medium">Create Service</span>
+        <span className="text-amber-700 font-medium">Create Service</span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Create New Service</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Create New Service</h1>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button 
               type="submit" 
-              className="bg-red-600 hover:bg-red-700 transition-colors order-2 sm:order-1"
+              className="bg-amber-700 hover:bg-amber-800 text-white transition-colors order-2 sm:order-1"
               disabled={createServiceMutation.isPending}
             >
               {createServiceMutation.isPending ? 'Creating...' : 'Create Service'}
             </Button>
             <Link href="/services" className="order-1 sm:order-2">
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto border-gray-300">
                 Cancel
               </Button>
             </Link>
@@ -100,22 +100,22 @@ export default function CreateServiceForm() {
         </div>
 
         {/* Branch Selection */}
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Branch Information</CardTitle>
+        <Card className="animate-fade-in border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Branch Information</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-white">
             <div className="w-full sm:max-w-xs">
-              <Label htmlFor="branch" className="text-sm font-medium">Branch *</Label>
+              <Label htmlFor="branch" className="text-sm font-medium text-black">Branch *</Label>
               <Select value={formData.branchId} onValueChange={(value) => setFormData({ ...formData, branchId: value })}>
-                <SelectTrigger className="mt-2 h-10">
+                <SelectTrigger className="mt-2 h-10 border-gray-300">
                   <SelectValue placeholder="Select Branch" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   {branches.map((branch) => (
                     <SelectItem key={branch._id} value={branch._id}>
                       <div className="flex flex-col">
-                        <span className="font-medium">{branch.branchName}</span>
+                        <span className="font-medium text-black">{branch.branchName}</span>
                         <span className="text-sm text-gray-500">{branch.location}</span>
                       </div>
                     </SelectItem>
@@ -127,31 +127,31 @@ export default function CreateServiceForm() {
         </Card>
 
         {/* Customer Details */}
-        <Card className="animate-fade-in">
-          <CardHeader className="bg-gray-50 rounded-t-lg">
-            <CardTitle className="text-lg sm:text-xl">Customer Details</CardTitle>
+        <Card className="animate-fade-in border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
+            <CardTitle className="text-lg sm:text-xl text-black">Customer Details</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
-                <Label htmlFor="customerName" className="text-sm font-medium">Customer Name *</Label>
+                <Label htmlFor="customerName" className="text-sm font-medium text-black">Customer Name *</Label>
                 <Input
                   id="customerName"
                   value={formData.customerName}
                   onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
                   placeholder="Enter customer name"
-                  className="h-10"
+                  className="h-10 border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="customerContact" className="text-sm font-medium">Contact Number *</Label>
+                <Label htmlFor="customerContact" className="text-sm font-medium text-black">Contact Number *</Label>
                 <Input
                   id="customerContact"
                   value={formData.customerContactNumber}
                   onChange={(e) => setFormData({ ...formData, customerContactNumber: e.target.value })}
                   placeholder="Enter contact number"
-                  className="h-10"
+                  className="h-10 border-gray-300"
                   required
                 />
               </div>
@@ -159,24 +159,24 @@ export default function CreateServiceForm() {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
-                <Label htmlFor="location" className="text-sm font-medium">Location *</Label>
+                <Label htmlFor="location" className="text-sm font-medium text-black">Location *</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   placeholder="Enter location"
-                  className="h-10"
+                  className="h-10 border-gray-300"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address" className="text-sm font-medium">Address *</Label>
+                <Label htmlFor="address" className="text-sm font-medium text-black">Address *</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Enter full address"
-                  className="min-h-[80px] resize-none"
+                  className="min-h-[80px] resize-none border-gray-300"
                   required
                 />
               </div>
@@ -185,34 +185,34 @@ export default function CreateServiceForm() {
         </Card>
 
         {/* Product Details */}
-        <Card className="animate-fade-in">
-          <CardHeader className="bg-gray-50 rounded-t-lg">
+        <Card className="animate-fade-in border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-200 rounded-t-lg">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CardTitle className="text-lg sm:text-xl">Product Details</CardTitle>
+              <CardTitle className="text-lg sm:text-xl text-black">Product Details</CardTitle>
               <Button 
                 type="button" 
                 variant="outline" 
                 size="sm" 
                 onClick={addProduct}
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto border-amber-700 text-amber-700 hover:bg-amber-50"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
             {formData.productDetails.map((product, index) => (
-              <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4 bg-white hover:shadow-sm transition-shadow">
+              <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4 bg-gray-50 hover:shadow-sm transition-shadow">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-medium text-gray-900">Product {index + 1}</h3>
+                  <h3 className="font-medium text-black">Product {index + 1}</h3>
                   {formData.productDetails.length > 1 && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => removeProduct(index)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -221,58 +221,58 @@ export default function CreateServiceForm() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor={`productName-${index}`} className="text-sm font-medium">Product Name *</Label>
+                    <Label htmlFor={`productName-${index}`} className="text-sm font-medium text-black">Product Name *</Label>
                     <Input
                       id={`productName-${index}`}
                       value={product.productName}
                       onChange={(e) => updateProduct(index, 'productName', e.target.value)}
                       placeholder="Enter product name"
-                      className="h-10"
+                      className="h-10 border-gray-300 bg-white"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`serialNumber-${index}`} className="text-sm font-medium">Serial Number</Label>
+                    <Label htmlFor={`serialNumber-${index}`} className="text-sm font-medium text-black">Serial Number</Label>
                     <Input
                       id={`serialNumber-${index}`}
                       value={product.serialNumber}
                       onChange={(e) => updateProduct(index, 'serialNumber', e.target.value)}
                       placeholder="Enter serial number"
-                      className="h-10"
+                      className="h-10 border-gray-300 bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`brand-${index}`} className="text-sm font-medium">Brand *</Label>
+                    <Label htmlFor={`brand-${index}`} className="text-sm font-medium text-black">Brand *</Label>
                     <Input
                       id={`brand-${index}`}
                       value={product.brand}
                       onChange={(e) => updateProduct(index, 'brand', e.target.value)}
                       placeholder="Enter brand"
-                      className="h-10"
+                      className="h-10 border-gray-300 bg-white"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`type-${index}`} className="text-sm font-medium">Type *</Label>
+                    <Label htmlFor={`type-${index}`} className="text-sm font-medium text-black">Type *</Label>
                     <Input
                       id={`type-${index}`}
                       value={product.type}
                       onChange={(e) => updateProduct(index, 'type', e.target.value)}
                       placeholder="Enter product type"
-                      className="h-10"
+                      className="h-10 border-gray-300 bg-white"
                       required
                     />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={`issue-${index}`} className="text-sm font-medium">Product Issue *</Label>
+                  <Label htmlFor={`issue-${index}`} className="text-sm font-medium text-black">Product Issue *</Label>
                   <Textarea
                     id={`issue-${index}`}
                     value={product.productIssue}
                     onChange={(e) => updateProduct(index, 'productIssue', e.target.value)}
                     placeholder="Describe the issue"
-                    className="min-h-[80px] resize-none"
+                    className="min-h-[80px] resize-none border-gray-300 bg-white"
                     required
                   />
                 </div>

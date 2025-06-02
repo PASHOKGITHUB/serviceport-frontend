@@ -22,7 +22,7 @@ const sidebarItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Services',
+    title: 'Service',
     href: '/services',
     icon: Wrench,
   },
@@ -32,7 +32,7 @@ const sidebarItems = [
     icon: Users,
   },
   {
-    title: 'Branches',
+    title: 'Branch',
     href: '/branches',
     icon: Building2,
   },
@@ -69,22 +69,22 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed top-0 left-0 h-full z-50 flex flex-col bg-white border-r border-gray-200 transition-transform duration-300 w-64",
+        "fixed top-0 left-0 h-full z-50 flex flex-col bg-black transition-transform duration-300 w-64",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Logo and close button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="font-bold text-lg sm:text-xl">
-              <span className="text-red-600">CAMERA</span>
-              <span className="text-gray-900"> PORT</span>
+              <span className="text-red-500">RENT O</span>
+              <span className="text-white"> RENT</span>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(false)}
-            className="lg:hidden"
+            className="lg:hidden text-white hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -103,8 +103,8 @@ export default function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm sm:text-base",
                   isActive 
-                    ? "bg-red-50 text-red-600 border border-red-200" 
-                    : "text-gray-700 hover:bg-gray-100"
+                    ? "bg-amber-700 text-white" 
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 )}
                 onClick={() => setIsOpen(false)} // Close on mobile
               >

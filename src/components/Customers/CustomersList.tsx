@@ -25,7 +25,7 @@ export default function CustomersList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Customers</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Customers</h1>
           <p className="text-gray-600 text-sm sm:text-base">
             {displayCustomers.length} total customers
           </p>
@@ -33,7 +33,7 @@ export default function CustomersList() {
       </div>
 
       {/* Search Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
         <div className="flex items-center">
           {/* Search Bar - Left Side */}
           <div className="flex-1 lg:max-w-md">
@@ -43,7 +43,7 @@ export default function CustomersList() {
                 placeholder="Search by name, phone, or customer ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-gray-300"
               />
             </div>
           </div>
@@ -51,9 +51,9 @@ export default function CustomersList() {
       </div>
 
       {/* Customers Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         {/* Desktop Table Header */}
-        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
+        <div className="hidden md:grid bg-amber-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
           <div className="text-center">Customer ID</div>
           <div className="text-center">Name</div>
           <div className="text-center">Phone</div>
@@ -63,9 +63,9 @@ export default function CustomersList() {
         </div>
 
         {/* Table Body */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-100">
           {displayCustomers.map((customer) => (
-            <div key={customer._id} className="p-4 sm:p-6">
+            <div key={customer._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
               {/* Mobile Layout */}
               <div className="md:hidden space-y-3">
                 <div className="flex justify-between items-start">
@@ -108,7 +108,7 @@ export default function CustomersList() {
               </div>
 
               {/* Desktop Layout - Properly Centered */}
-              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
+              <div className="hidden md:grid items-center transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr", gap: "1rem"}}>
                 <div className="font-medium text-gray-900 font-mono text-sm break-all flex justify-center">
                   {customer.customerId}
                 </div>

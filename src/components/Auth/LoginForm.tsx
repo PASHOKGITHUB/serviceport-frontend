@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,6 @@ import type { LoginRequest } from '@/domain/entities/auth';
 export default function LoginForm() {
   const router = useRouter();
   const loginMutation = useLogin();
-
   const [formData, setFormData] = useState<LoginRequest>({
     userName: '',
     password: '',
@@ -36,50 +34,49 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader className="text-center space-y-4">
+      <Card className="w-full max-w-md animate-fade-in shadow-lg border border-gray-200 overflow-hidden">
+        <CardHeader className="bg-white border-b border-gray-100 p-6 text-center space-y-4">
           <div className="mb-4">
             <div className="font-bold text-2xl sm:text-3xl">
-              <span className="text-red-600">CAMERA</span>
+              <span className="text-amber-700">CAMERA</span>
               <span className="text-gray-900"> PORT</span>
             </div>
           </div>
-          <CardTitle className="text-xl sm:text-2xl">Welcome Back</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl text-black font-semibold">Welcome Back</CardTitle>
           <p className="text-gray-600 text-sm">Sign in to your account to continue</p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="bg-white p-6 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="userName" className="text-sm font-medium">Username</Label>
+              <Label htmlFor="userName" className="text-sm font-medium text-gray-700">Username</Label>
               <Input
                 id="userName"
                 type="text"
                 value={formData.userName}
                 onChange={(e) => handleInputChange('userName', e.target.value)}
                 placeholder="Enter your username"
-                className="h-10"
+                className="h-10 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
                 required
                 disabled={loginMutation.isPending}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Enter your password"
-                className="h-10"
+                className="h-10 border-gray-300 focus:border-amber-500 focus:ring-amber-500"
                 required
                 disabled={loginMutation.isPending}
               />
             </div>
-
             <Button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 h-10"
+              className="w-full bg-amber-700 hover:bg-amber-800 h-10 text-white font-medium"
               disabled={loginMutation.isPending}
             >
               {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
