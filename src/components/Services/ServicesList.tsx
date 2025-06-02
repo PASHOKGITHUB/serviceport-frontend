@@ -3,32 +3,69 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  IndianRupee, 
-  MoreHorizontal, 
   Search, 
-  X
+  IndianRupee, 
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
-import { useServices, useDeleteService } from '@/hooks/useServices';
-import { useTechnicians } from '@/hooks/useStaff';
+import { useServices } from '@/hooks/useServices';
 import { useBranches } from '@/hooks/useBranches';
-import { useUpdateServiceAction, useAssignTechnician, useUpdateServiceCost } from '@/hooks/useServices';
-import { getStatusColor } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import ConfirmationDialog from '@/components/Common/ConfirmationDialog';
-import type { Service, ProductDetails, Staff } from '@/domain/entities/service';
+import { useUpdateServiceCost, useUpdateServiceAction, useAssignTechnician } from '@/hooks/useServices';
+import { useTechnicians } from '@/hooks/useStaff';
 
-// Action hierarchy for validation
-const ACTION_HIERARCHY = [
+// Types
+interface Service {
+  _id: string;
+  serviceId: string;
+  customerName: string;
+  customerContactNumber: string;
+  action: string;
+  address: string;
+  location: string;
+  productDetails: Array<{
+    productName: string;
+    serialNumber: string;
+    brand: string;
+    type: string;
+    productIssue: string;
+    _id: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  serviceCost?: number;
+  technician?: {
+    _id: string;
+    staffName: string;
+    contactNumber: string;
+    role: string;
+  };
+}
+
+interface Branch {
+  _id: string;
+  branchName: string;
+  location: string;
+}
+
+interface Technician {
+  _id: string;
+  staffName: string;
+  contactNumber: string;
+  role: string;
+}
+
+const ACTION_OPTIONS = [
   'Received',
   'Assigned to Technician',
   'Under Inspection',
@@ -41,148 +78,125 @@ const ACTION_HIERARCHY = [
   'Cancelled'
 ];
 
-const TIME_FILTERS = [
-  { value: 'all', label: 'All Time' },
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'Last Week' },
-  { value: 'month', label: 'Last Month' },
-  { value: 'quarter', label: 'Last Quarter' },
-];
-
 export default function ServicesList() {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedBranch, setSelectedBranch] = useState('All Branches');
+  const [loadingServiceId, setLoadingServiceId] = useState<string | null>(null);
   const [costDialogOpen, setCostDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [newCost, setNewCost] = useState('');
-  
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState<string>('all');
-  const [selectedAction, setSelectedAction] = useState<string>('all');
-  const [timeFilter, setTimeFilter] = useState<string>('all');
+  const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
   
   const { data: servicesResponse, isLoading } = useServices();
+  const { data: branches = [], isLoading: branchesLoading } = useBranches();
   const { data: techniciansResponse } = useTechnicians();
-  const { data: branchesData } = useBranches();
-  
-  // Extract data from API responses using useMemo to prevent unnecessary recalculations
-  const allServices = useMemo(() => 
+  const updateCostMutation = useUpdateServiceCost();
+  const updateActionMutation = useUpdateServiceAction();
+  const assignTechnicianMutation = useAssignTechnician();
+
+  const allServices = useMemo((): Service[] => 
     servicesResponse?.data?.services || [], 
     [servicesResponse?.data?.services]
   );
-  
-  const technicians = useMemo(() => 
+
+  const technicians = useMemo((): Technician[] => 
     techniciansResponse || [], 
     [techniciansResponse]
   );
-  
-  const branches = useMemo(() => 
-    branchesData || [], 
-    [branchesData]
-  );
-  
-  const updateActionMutation = useUpdateServiceAction();
-  const assignTechnicianMutation = useAssignTechnician();
-  const updateCostMutation = useUpdateServiceCost();
-  const deleteServiceMutation = useDeleteService();
 
-  // Filter services based on all criteria
+  const displayServices = searchQuery ? 
+    allServices.filter((service: Service) => 
+      service.serviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.customerContactNumber.includes(searchQuery)
+    ) : allServices;
+
+  // Get unique actions for filter tabs
+  const filterOptions = useMemo(() => {
+    const actions = [...new Set(allServices.map(service => service.action).filter(Boolean))];
+    return ['All', ...actions];
+  }, [allServices]);
+
+  // Filter services by active filter and selected branch
   const filteredServices = useMemo(() => {
-    let filtered = [...allServices];
+    return displayServices.filter((service: Service) => {
+      const matchesAction = activeFilter === 'All' || service.action === activeFilter;
+      // Note: Services don't have branchId in the provided data structure
+      // If you need branch filtering, you'll need to add branchId to service data
+      const matchesBranch = selectedBranch === 'All Branches'; // Always true for now
+      return matchesAction && matchesBranch;
+    });
+  }, [displayServices, activeFilter, selectedBranch]);
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(service => 
-        service.serviceId.toLowerCase().includes(query) ||
-        service.customerName.toLowerCase().includes(query) ||
-        service.customerContactNumber.includes(query) ||
-        service.location.toLowerCase().includes(query) ||
-        service.productDetails.some((product: ProductDetails) => 
-          product.productName.toLowerCase().includes(query) ||
-          product.brand.toLowerCase().includes(query)
-        )
-      );
-    }
-
-    // Branch filter
-    if (selectedBranch !== 'all') {
-      filtered = filtered.filter(service => 
-        service.branchId === selectedBranch
-      );
-    }
-
-    // Action filter
-    if (selectedAction !== 'all') {
-      filtered = filtered.filter(service => service.action === selectedAction);
-    }
-
-    // Time filter
-    if (timeFilter !== 'all') {
-      const now = new Date();
-      const filterDate = new Date();
-      
-      switch (timeFilter) {
-        case 'today':
-          filterDate.setHours(0, 0, 0, 0);
-          break;
-        case 'week':
-          filterDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          filterDate.setMonth(now.getMonth() - 1);
-          break;
-        case 'quarter':
-          filterDate.setMonth(now.getMonth() - 3);
-          break;
+  // Group services by date
+  const servicesByDate = useMemo(() => {
+    const grouped = filteredServices.reduce((acc: Record<string, Service[]>, service: Service) => {
+      const date = new Date(service.createdAt).toDateString();
+      if (!acc[date]) {
+        acc[date] = [];
       }
-      
-      filtered = filtered.filter(service => 
-        new Date(service.createdAt) >= filterDate
-      );
-    }
+      acc[date].push(service);
+      return acc;
+    }, {});
 
-    return filtered;
-  }, [allServices, searchQuery, selectedBranch, selectedAction, timeFilter]);
+    // Sort dates in descending order (newest first)
+    const sortedDates = Object.keys(grouped).sort((a, b) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
 
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchQuery('');
-    setSelectedBranch('all');
-    setSelectedAction('all');
-    setTimeFilter('all');
-  };
+    return sortedDates.map(date => ({
+      date,
+      services: grouped[date]
+    }));
+  }, [filteredServices]);
 
-  // Get valid next actions based on current action
-  const getValidNextActions = (currentAction: string) => {
-    const currentIndex = ACTION_HIERARCHY.indexOf(currentAction);
-    if (currentIndex === -1) return ACTION_HIERARCHY;
-    
-    const validActions = [currentAction];
-    if (currentIndex < ACTION_HIERARCHY.length - 2) {
-      validActions.push(ACTION_HIERARCHY[currentIndex + 1]);
-    }
-    if (currentAction !== 'Cancelled' && currentAction !== 'Completed') {
-      validActions.push('Cancelled');
-    }
-    return validActions;
+  const handleRowClick = (serviceId: string) => {
+    setLoadingServiceId(serviceId);
   };
 
   const handleActionChange = async (serviceId: string, newAction: string) => {
     try {
+      setLoadingActions(prev => new Set(prev).add(serviceId));
       await updateActionMutation.mutateAsync({ id: serviceId, action: newAction });
+      
+      // Close the dropdown after successful update
+      setOpenDropdowns(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`action-${serviceId}`);
+        return newSet;
+      });
     } catch (err) {
       console.error('Error updating service action:', err);
+    } finally {
+      setLoadingActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(serviceId);
+        return newSet;
+      });
     }
   };
 
   const handleTechnicianChange = async (serviceId: string, technicianId: string) => {
     try {
       await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
+      
+      // Close the dropdown after successful update
+      setOpenDropdowns(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`technician-${serviceId}`);
+        return newSet;
+      });
     } catch (error) {
       console.error('Error assigning technician:', error);
     }
+  };
+
+  const openCostDialog = (service: Service) => {
+    setSelectedService(service);
+    setNewCost(service.serviceCost?.toString() || '');
+    setCostDialogOpen(true);
   };
 
   const handleCostUpdate = async () => {
@@ -201,428 +215,422 @@ export default function ServicesList() {
     }
   };
 
-  const handleDeleteClick = (service: Service) => {
-    setServiceToDelete(service);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (serviceToDelete) {
-      try {
-        await deleteServiceMutation.mutateAsync(serviceToDelete._id);
-        setDeleteDialogOpen(false);
-        setServiceToDelete(null);
-      } catch (error) {
-        console.error('Error deleting service:', error);
-      }
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+        return 'text-green-600';
+      case 'cancelled':
+        return 'text-red-600';
+      case 'received':
+        return 'text-blue-600';
+      case 'assigned to technician':
+        return 'text-purple-600';
+      case 'under inspection':
+        return 'text-yellow-600';
+      case 'approved':
+        return 'text-green-600';
+      case 'in service':
+        return 'text-indigo-600';
+      case 'finished':
+        return 'text-teal-600';
+      case 'delivered':
+        return 'text-cyan-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setServiceToDelete(null);
-  };
-
-  const openCostDialog = (service: Service) => {
-    setSelectedService(service);
-    setNewCost(service.serviceCost?.toString() || '');
-    setCostDialogOpen(true);
-  };
-
-  if (isLoading) {
+  if (isLoading || branchesLoading) {
     return <ServicesListSkeleton />;
   }
-
-  const hasActiveFilters = searchQuery || selectedBranch !== 'all' || selectedAction !== 'all' || timeFilter !== 'all';
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-black">Services</h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            {hasActiveFilters ? `${filteredServices.length} of ${allServices.length}` : `${allServices.length} total`} service requests
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-black">Services</h1>
+            <p className="text-gray-600 text-sm sm:text-base">
+              {filteredServices.length} total services
+            </p>
+          </div>
+          
+          {/* Branch Filter Dropdown */}
+          <div className="flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-48 justify-between text-sm bg-white"
+                  style={{ borderColor: '#925D00' }}
+                >
+                  {selectedBranch}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 bg-white">
+                <DropdownMenuItem 
+                  onClick={() => setSelectedBranch('All Branches')}
+                  className={selectedBranch === 'All Branches' ? 'bg-gray-100' : ''}
+                >
+                  All Branches
+                </DropdownMenuItem>
+                {branches.map((branch) => (
+                  <DropdownMenuItem 
+                    key={branch._id}
+                    onClick={() => setSelectedBranch(branch.branchName)}
+                    className={selectedBranch === branch.branchName ? 'bg-gray-100' : ''}
+                  >
+                    {branch.branchName}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         <Link href="/services/create">
-          <Button className="bg-amber-700 hover:bg-amber-800 text-white w-full sm:w-auto">
+          <Button 
+            className="text-white w-full sm:w-auto font-medium"
+            style={{ backgroundColor: '#925D00' }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             New Service
           </Button>
         </Link>
       </div>
 
-      {/* Filters Section */}
+      {/* Search Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          {/* Search Bar - Left Side */}
+        <div className="flex items-center">
           <div className="flex-1 lg:max-w-md">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search by Service ID, Customer, Phone, Product..."
+                placeholder="Search Service ID, Customer Name, Number"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 border-gray-300"
               />
             </div>
           </div>
-
-          {/* Right Side Filters - Closely Spaced */}
-          <div className="flex items-center gap-2">
-            {/* Branch Filter */}
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-              <SelectTrigger className="w-40 border-gray-300">
-                <SelectValue placeholder="All Branches" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200">
-                <SelectItem value="all">All Branches</SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch._id} value={branch._id}>
-                    {branch.branchName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Action Filter */}
-            <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-40 border-gray-300">
-                <SelectValue placeholder="All Actions" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200">
-                <SelectItem value="all">All Actions</SelectItem>
-                {ACTION_HIERARCHY.map((action) => (
-                  <SelectItem key={action} value={action}>
-                    {action}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Time Filter */}
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-32 border-gray-300">
-                <SelectValue placeholder="Time Period" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200">
-                {TIME_FILTERS.map((filter) => (
-                  <SelectItem key={filter.value} value={filter.value}>
-                    {filter.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearFilters}
-                className="flex items-center gap-1 whitespace-nowrap ml-2 border-gray-300"
-              >
-                <X className="h-4 w-4" />
-                Clear All
-              </Button>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Services Table */}
+      {/* Filter Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit overflow-x-auto">
+        {filterOptions.map((option: string) => {
+          const serviceCount = option === 'All' 
+            ? filteredServices.length 
+            : filteredServices.filter((service: Service) => service.action === option).length;
+          
+          return (
+            <button
+              key={option}
+              onClick={() => setActiveFilter(option)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                activeFilter === option
+                  ? 'text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              style={{
+                backgroundColor: activeFilter === option ? '#925D00' : 'transparent'
+              }}
+            >
+              {option}({serviceCount})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Services Table with Date Sections */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         {/* Desktop Table Header */}
-        <div className="hidden md:grid bg-amber-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
+        <div 
+          className="hidden md:grid text-white px-6 py-4 text-sm font-medium" 
+          style={{
+            gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1fr", 
+            gap: "1rem",
+            backgroundColor: '#C5AA7E'
+          }}
+        >
           <div className="text-center">Service ID</div>
-          <div className="text-center">Customer</div>
+          <div className="text-center">Customer Name</div>
           <div className="text-center">Phone</div>
           <div className="text-center">Product</div>
           <div className="text-center">Technician</div>
           <div className="text-center">Action</div>
-          <div className="text-center">More</div>
+          <div className="text-center">Amount</div>
         </div>
 
-        {/* Table Body */}
-        <div className="divide-y divide-gray-100">
-          {filteredServices.map((service: Service) => (
-            <div key={service._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
-              {/* Mobile Layout */}
-              <div className="md:hidden space-y-3">
-                <div className="flex justify-between items-start">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-gray-900 break-words font-mono text-sm">
-                      {service.serviceId}
-                    </div>
-                    <div className="text-sm text-gray-900 break-words">{service.customerName}</div>
-                    <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
-                    <div className="text-sm text-gray-500 break-words">{service.location}</div>
-                  </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    <Badge className={getStatusColor(service.action)} variant="outline">
-                      {service.action}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Product: </span>
-                    <span className="text-sm text-gray-900 break-words">
-                      {service.productDetails[0]?.productName || 'N/A'}
-                    </span>
-                    {service.productDetails[0]?.brand && (
-                      <span className="text-sm text-gray-500"> - {service.productDetails[0].brand}</span>
-                    )}
-                  </div>
-                  {service.serviceCost && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Cost: </span>
-                      <span className="text-sm text-green-600 font-medium">
-                        ₹{service.serviceCost}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Select 
-                    value={service.technician?._id || "unassigned"}
-                    onValueChange={(value) => {
-                      if (value !== "unassigned") {
-                        handleTechnicianChange(service._id, value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full h-9 border-gray-300">
-                      <SelectValue placeholder="Assign Technician" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-200">
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {technicians.map((tech: Staff) => (
-                        <SelectItem key={tech._id} value={tech._id}>
-                          {tech.staffName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <div className="relative">
-                    <Select 
-                      value={service.action}
-                      onValueChange={(value) => handleActionChange(service._id, value)}
-                    >
-                      <SelectTrigger className="w-full h-9 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            service.action === 'Received' ? 'bg-blue-500' :
-                            service.action === 'Assigned to Technician' ? 'bg-purple-500' :
-                            service.action === 'Under Inspection' ? 'bg-yellow-500' :
-                            service.action === 'Waiting for Customer Approval' ? 'bg-orange-500' :
-                            service.action === 'Approved' ? 'bg-green-500' :
-                            service.action === 'In Service' ? 'bg-indigo-500' :
-                            service.action === 'Finished' ? 'bg-teal-500' :
-                            service.action === 'Delivered' ? 'bg-cyan-500' :
-                            service.action === 'Completed' ? 'bg-emerald-500' :
-                            service.action === 'Cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                          }`} />
-                          <span className="truncate text-sm">{service.action}</span>
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-200">
-                        {getValidNextActions(service.action).map((action) => (
-                          <SelectItem key={action} value={action}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                action === 'Received' ? 'bg-blue-500' :
-                                action === 'Assigned to Technician' ? 'bg-purple-500' :
-                                action === 'Under Inspection' ? 'bg-yellow-500' :
-                                action === 'Waiting for Customer Approval' ? 'bg-orange-500' :
-                                action === 'Approved' ? 'bg-green-500' :
-                                action === 'In Service' ? 'bg-indigo-500' :
-                                action === 'Finished' ? 'bg-teal-500' :
-                                action === 'Delivered' ? 'bg-cyan-500' :
-                                action === 'Completed' ? 'bg-emerald-500' :
-                                action === 'Cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                              }`} />
-                              {action}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Mobile Actions */}
-                  <div className="flex gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full border-gray-300">
-                          <MoreHorizontal className="h-4 w-4 mr-2" />
-                          More Actions
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="center" className="w-48 bg-white border-gray-200">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/services/view/${service._id}`} className="flex items-center">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/services/edit/${service._id}`} className="flex items-center">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Service
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => openCostDialog(service)}
-                          className="flex items-center"
-                        >
-                          <IndianRupee className="h-4 w-4 mr-2" />
-                          Update Cost
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteClick(service)}
-                          className="flex items-center text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Service
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+        {/* Date-wise Service Sections */}
+        <div className="divide-y divide-gray-200">
+          {servicesByDate.map(({ date, services: dateServices }) => (
+            <div key={date}>
+              {/* Date Header */}
+              <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                <h3 className="text-sm font-medium text-gray-900">
+                  {new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
               </div>
 
-              {/* Desktop Layout - Properly Centered */}
-              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1.5fr 2fr 0.6fr", gap: "1rem"}}>
-                <div className="font-medium text-gray-900 break-all font-mono text-sm flex justify-center">
-                  {service.serviceId}
-                </div>
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="font-medium text-gray-900 break-words">{service.customerName}</div>
-                  <div className="text-sm text-gray-500 break-words">{service.location}</div>
-                </div>
-                <div className="text-gray-900 break-all flex justify-center items-center">{service.customerContactNumber}</div>
-                <div className="flex flex-col items-center justify-center text-center">
-                  <div className="font-medium text-gray-900 break-words">
-                    {service.productDetails[0]?.productName || 'N/A'}
-                  </div>
-                  <div className="text-sm text-gray-500 break-words">
-                    {service.productDetails[0]?.brand || ''}
-                  </div>
-                  {service.serviceCost && (
-                    <div className="text-sm text-green-600 font-medium mt-1">
-                      ₹{service.serviceCost}
-                    </div>
-                  )}
-                </div>
-                <div className="flex justify-center items-center">
-                  <Select 
-                    value={service.technician?._id || "unassigned"}
-                    onValueChange={(value) => {
-                      if (value !== "unassigned") {
-                        handleTechnicianChange(service._id, value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-full h-9 border-gray-300">
-                      <SelectValue placeholder="Assign" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-200">
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {technicians.map((tech: Staff) => (
-                        <SelectItem key={tech._id} value={tech._id}>
-                          {tech.staffName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-center items-center">
-                  <Select 
-                    value={service.action}
-                    onValueChange={(value) => handleActionChange(service._id, value)}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          service.action === 'Received' ? 'bg-blue-500' :
-                          service.action === 'Assigned to Technician' ? 'bg-purple-500' :
-                          service.action === 'Under Inspection' ? 'bg-yellow-500' :
-                          service.action === 'Waiting for Customer Approval' ? 'bg-orange-500' :
-                          service.action === 'Approved' ? 'bg-green-500' :
-                          service.action === 'In Service' ? 'bg-indigo-500' :
-                          service.action === 'Finished' ? 'bg-teal-500' :
-                          service.action === 'Delivered' ? 'bg-cyan-500' :
-                          service.action === 'Completed' ? 'bg-emerald-500' :
-                          service.action === 'Cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                        }`} />
-                        <span className="truncate text-sm">{service.action}</span>
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-200">
-                      {getValidNextActions(service.action).map((action) => (
-                        <SelectItem key={action} value={action}>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${
-                              action === 'Received' ? 'bg-blue-500' :
-                              action === 'Assigned to Technician' ? 'bg-purple-500' :
-                              action === 'Under Inspection' ? 'bg-yellow-500' :
-                              action === 'Waiting for Customer Approval' ? 'bg-orange-500' :
-                              action === 'Approved' ? 'bg-green-500' :
-                              action === 'In Service' ? 'bg-indigo-500' :
-                              action === 'Finished' ? 'bg-teal-500' :
-                              action === 'Delivered' ? 'bg-cyan-500' :
-                              action === 'Completed' ? 'bg-emerald-500' :
-                              action === 'Cancelled' ? 'bg-red-500' : 'bg-gray-500'
-                            }`} />
-                            {action}
+              {/* Services for this date */}
+              <div className="divide-y divide-gray-100">
+                {dateServices.map((service: Service) => (
+                  <div key={service._id} className="hover:bg-gray-50 transition-colors">
+                    {/* Mobile Layout */}
+                    <div className="md:hidden p-4 space-y-3">
+                      <Link 
+                        href={`/services/view/${service._id}`} 
+                        className="block" 
+                        onClick={() => handleRowClick(service._id)}
+                      >
+                        <div className="flex justify-between items-start cursor-pointer">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-gray-900 break-words flex items-center gap-2 font-mono">
+                              {service.serviceId}
+                              {loadingServiceId === service._id && (
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-900 break-words">{service.customerName}</div>
+                            <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
+                            <div className="text-sm text-gray-500 break-words">
+                              {service.productDetails[0]?.productName || 'N/A'}
+                            </div>
                           </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex justify-center items-center">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 w-8 p-0 border-gray-300">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white border-gray-200">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/services/view/${service._id}`} className="flex items-center">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/services/edit/${service._id}`} className="flex items-center">
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Service
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => openCostDialog(service)}
-                        className="flex items-center"
+                          <div className="flex flex-col items-end gap-2">
+                            {/* Mobile Action Dropdown */}
+                            <DropdownMenu 
+                              open={openDropdowns.has(`mobile-action-${service._id}`)}
+                              onOpenChange={(isOpen) => {
+                                setOpenDropdowns(prev => {
+                                  const newSet = new Set(prev);
+                                  if (isOpen) {
+                                    newSet.add(`mobile-action-${service._id}`);
+                                  } else {
+                                    newSet.delete(`mobile-action-${service._id}`);
+                                  }
+                                  return newSet;
+                                });
+                              }}
+                            >
+                              <DropdownMenuTrigger asChild>
+                                <button 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                  }}
+                                  className={`text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1 font-medium ${getStatusColor(service.action)}`}
+                                >
+                                  <span className="truncate">
+                                    {service.action.length > 10 ? `${service.action.substring(0, 10)}...` : service.action}
+                                  </span>
+                                  {loadingActions.has(service._id) ? (
+                                    <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                                  ) : (
+                                    <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                                  )}
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="bg-white w-52">
+                                {ACTION_OPTIONS.map((action: string) => (
+                                  <DropdownMenuItem 
+                                    key={action}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleActionChange(service._id, action);
+                                    }}
+                                    className={service.action === action ? 'bg-gray-100 font-medium' : 'font-medium'}
+                                  >
+                                    {action}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            
+                            <button 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openCostDialog(service);
+                              }}
+                              className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
+                            >
+                              <IndianRupee className="h-3 w-3" />
+                              {service.serviceCost ? `₹${service.serviceCost}` : 'Amount'}
+                            </button>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <Link 
+                      href={`/services/view/${service._id}`} 
+                      onClick={() => handleRowClick(service._id)}
+                    >
+                      <div 
+                        className="hidden md:grid items-center cursor-pointer hover:bg-gray-100 px-6 py-4" 
+                        style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1fr", gap: "1rem"}}
                       >
-                        <IndianRupee className="h-4 w-4 mr-2" />
-                        Update Cost
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteClick(service)}
-                        className="flex items-center text-red-600 focus:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Service
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                        <div className="flex justify-center items-center">
+                          <div className="font-medium text-gray-900 break-words text-center flex items-center gap-2 font-mono">
+                            {service.serviceId}
+                            {loadingServiceId === service._id && (
+                              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <div className="text-center">
+                            <div className="font-medium text-gray-900 break-words">{service.customerName}</div>
+                          </div>
+                        </div>
+                        <div className="text-gray-900 break-all flex justify-center items-center font-medium">
+                          {service.customerContactNumber}
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <div className="text-center">
+                            <div className="text-gray-900 break-words font-medium">
+                              {service.productDetails[0]?.productName || 'N/A'}
+                            </div>
+                            {service.productDetails[0]?.brand && (
+                              <div className="text-xs text-gray-500 font-medium">
+                                {service.productDetails[0].brand}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <DropdownMenu 
+                            open={openDropdowns.has(`technician-${service._id}`)}
+                            onOpenChange={(isOpen) => {
+                              setOpenDropdowns(prev => {
+                                const newSet = new Set(prev);
+                                if (isOpen) {
+                                  newSet.add(`technician-${service._id}`);
+                                } else {
+                                  newSet.delete(`technician-${service._id}`);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="w-full px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center justify-between font-medium"
+                              >
+                                <span className="truncate">
+                                  {service.technician?.staffName || 'Assign Technician'}
+                                </span>
+                                <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white w-48">
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  // Handle unassign if needed
+                                }}
+                                className="font-medium"
+                              >
+                                Unassigned
+                              </DropdownMenuItem>
+                              {technicians.map((tech: Technician) => (
+                                <DropdownMenuItem 
+                                  key={tech._id}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleTechnicianChange(service._id, tech._id);
+                                  }}
+                                  className="font-medium"
+                                >
+                                  {tech.staffName}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <DropdownMenu 
+                            open={openDropdowns.has(`action-${service._id}`)}
+                            onOpenChange={(isOpen) => {
+                              setOpenDropdowns(prev => {
+                                const newSet = new Set(prev);
+                                if (isOpen) {
+                                  newSet.add(`action-${service._id}`);
+                                } else {
+                                  newSet.delete(`action-${service._id}`);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="w-full px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center justify-between max-w-32 font-medium"
+                              >
+                                <span className="truncate text-left">
+                                  {service.action.length > 12 ? `${service.action.substring(0, 12)}...` : service.action}
+                                </span>
+                                {loadingActions.has(service._id) ? (
+                                  <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                                ) : (
+                                  <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                                )}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white w-52">
+                              {ACTION_OPTIONS.map((action: string) => (
+                                <DropdownMenuItem 
+                                  key={action}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleActionChange(service._id, action);
+                                  }}
+                                  className={service.action === action ? 'bg-gray-100 font-medium' : 'font-medium'}
+                                >
+                                  {action}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <button 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openCostDialog(service);
+                            }}
+                            className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
+                          >
+                            <IndianRupee className="h-3 w-3" />
+                            {service.serviceCost ? `₹${service.serviceCost}` : 'Amount'}
+                          </button>
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -630,22 +638,14 @@ export default function ServicesList() {
 
         {filteredServices.length === 0 && (
           <div className="px-6 py-12 text-center">
-            <div className="text-gray-500 mb-4">
-              {hasActiveFilters ? 'No services match your filters.' : 'No services found.'}
+            <div className="text-gray-500 font-medium">
+              {searchQuery 
+                ? 'No services found matching your search.' 
+                : activeFilter !== 'All' 
+                ? `No services found with ${activeFilter} status.`
+                : 'No services found.'
+              }
             </div>
-            {hasActiveFilters ? (
-              <Button variant="outline" onClick={clearFilters} className="border-gray-300">
-                <X className="h-4 w-4 mr-2" />
-                Clear All Filters
-              </Button>
-            ) : (
-              <Link href="/services/create">
-                <Button className="bg-amber-700 hover:bg-amber-800 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New Service
-                </Button>
-              </Link>
-            )}
           </div>
         )}
       </div>
@@ -671,14 +671,15 @@ export default function ServicesList() {
                 <Button 
                   onClick={handleCostUpdate}
                   disabled={!newCost || updateCostMutation.isPending}
-                  className="flex-1 bg-amber-700 hover:bg-amber-800 text-white"
+                  className="flex-1 text-white font-medium"
+                  style={{ backgroundColor: '#925D00' }}
                 >
                   {updateCostMutation.isPending ? 'Updating...' : 'Update Cost'}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setCostDialogOpen(false)}
-                  className="flex-1 border-gray-300"
+                  className="flex-1 border-gray-300 font-medium"
                 >
                   Cancel
                 </Button>
@@ -687,19 +688,6 @@ export default function ServicesList() {
           </div>
         </div>
       )}
-
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        open={deleteDialogOpen}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        title="Delete Service"
-        description={`Are you sure you want to delete service ${serviceToDelete?.serviceId}? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        isDestructive={true}
-        isLoading={deleteServiceMutation.isPending}
-      />
     </div>
   );
 }
@@ -710,11 +698,12 @@ function ServicesListSkeleton() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <Skeleton className="h-8 w-32 mb-2" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-48" />
         </div>
         <Skeleton className="h-10 w-32" />
       </div>
       
+      <Skeleton className="h-12 w-96" />
       <Skeleton className="h-16 w-full" />
       
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

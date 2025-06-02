@@ -32,9 +32,18 @@ export default function Header({ title }: HeaderProps) {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 bg-white border-b border-gray-200 h-16 z-30">
+    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 h-20 z-30">
       <div className="flex items-center justify-between h-full px-4 sm:px-6">
         <div className="flex items-center gap-4 min-w-0 flex-1">
+          {/* Logo - visible on desktop */}
+          <div className="hidden lg:flex items-center gap-2 mr-8">
+            <img 
+              src="/logo.svg" 
+              alt="CAMERA PORT" 
+              className="h-18 w-50"
+            />
+          </div>
+
           {/* Mobile menu button */}
           <Button
             variant="ghost"
