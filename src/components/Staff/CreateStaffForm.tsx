@@ -32,9 +32,8 @@ export default function CreateStaffForm() {
     try {
       await createStaffMutation.mutateAsync(formData);
       router.push('/staff');
-    } catch (err) 
-    {
-        console.error('Error creating staff:', err);
+    } catch (err) {
+      console.error('Error creating staff:', err);
       // Error is handled in the mutation
     }
   };
@@ -47,23 +46,23 @@ export default function CreateStaffForm() {
           Staff
         </Link>
         <ChevronRight className="h-4 w-4 text-gray-400" />
-        <span className="text-red-600 font-medium">Add Staff Details</span>
+        <span className="text-amber-700 font-medium">Add Staff Details</span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Staff Member</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Add New Staff Member</h1>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button 
               type="submit" 
-              className="bg-red-600 hover:bg-red-700 transition-colors order-2 sm:order-1"
+              className="bg-amber-700 hover:bg-amber-800 text-white transition-colors order-2 sm:order-1"
               disabled={createStaffMutation.isPending}
             >
               {createStaffMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
             <Link href="/staff" className="order-1 sm:order-2">
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto border-gray-300">
                 Cancel
               </Button>
             </Link>
@@ -72,31 +71,31 @@ export default function CreateStaffForm() {
 
         {/* Staff Details Form */}
         <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader className="bg-gray-50 rounded-t-lg">
-              <CardTitle className="text-lg text-center">Staff Details</CardTitle>
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="bg-gray-200 rounded-t-lg">
+              <CardTitle className="text-lg text-center text-black">Staff Details</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium">Full Name *</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium text-black">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={formData.staffName}
                     onChange={(e) => setFormData({ ...formData, staffName: e.target.value })}
                     placeholder="Enter full name"
-                    className="h-10"
+                    className="h-10 border-gray-300"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contactNumber" className="text-sm font-medium">Contact Number *</Label>
+                  <Label htmlFor="contactNumber" className="text-sm font-medium text-black">Contact Number *</Label>
                   <Input
                     id="contactNumber"
                     value={formData.contactNumber}
                     onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
                     placeholder="Enter contact number"
-                    className="h-10"
+                    className="h-10 border-gray-300"
                     required
                   />
                 </div>
@@ -104,12 +103,12 @@ export default function CreateStaffForm() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="selectRole" className="text-sm font-medium">Select Role *</Label>
+                  <Label htmlFor="selectRole" className="text-sm font-medium text-black">Select Role *</Label>
                   <Select value={formData.role} onValueChange={(value: StaffRole) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger className="h-10">
+                    <SelectTrigger className="h-10 border-gray-300">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200">
                       <SelectItem value="Technician">Technician</SelectItem>
                       <SelectItem value="Staff">Staff</SelectItem>
                       <SelectItem value="Manager">Manager</SelectItem>
@@ -117,16 +116,16 @@ export default function CreateStaffForm() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="branch" className="text-sm font-medium">Branch *</Label>
+                  <Label htmlFor="branch" className="text-sm font-medium text-black">Branch *</Label>
                   <Select value={formData.branch} onValueChange={(value) => setFormData({ ...formData, branch: value })}>
-                    <SelectTrigger className="h-10">
+                    <SelectTrigger className="h-10 border-gray-300">
                       <SelectValue placeholder="Select Branch" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200">
                       {branches.map((branch) => (
                         <SelectItem key={branch._id} value={branch._id}>
                           <div className="flex flex-col">
-                            <span className="font-medium">{branch.branchName}</span>
+                            <span className="font-medium text-black">{branch.branchName}</span>
                             <span className="text-sm text-gray-500">{branch.location}</span>
                           </div>
                         </SelectItem>

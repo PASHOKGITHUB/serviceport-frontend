@@ -56,13 +56,13 @@ export default function BranchList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Branch Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Branch Management</h1>
           <p className="text-gray-600 text-sm sm:text-base">
             {filteredBranches.length} total branches
           </p>
         </div>
         <Link href="/branches/create">
-          <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
+          <Button className="bg-amber-700 hover:bg-amber-800 text-white w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Branch
           </Button>
@@ -70,7 +70,7 @@ export default function BranchList() {
       </div>
 
       {/* Search Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
         <div className="flex items-center">
           {/* Search Bar - Left Side */}
           <div className="flex-1 lg:max-w-md">
@@ -80,7 +80,7 @@ export default function BranchList() {
                 placeholder="Search by branch name, location, or phone number..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-gray-300"
               />
             </div>
           </div>
@@ -88,9 +88,9 @@ export default function BranchList() {
       </div>
 
       {/* Branch Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
         {/* Desktop Table Header */}
-        <div className="hidden md:grid bg-red-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr 1fr", gap: "1rem"}}>
+        <div className="hidden md:grid bg-amber-600 text-white px-6 py-4 text-sm font-medium" style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr 1fr", gap: "1rem"}}>
           <div className="text-center">Branch Name</div>
           <div className="text-center">Location</div>
           <div className="text-center">Phone Number</div>
@@ -99,9 +99,9 @@ export default function BranchList() {
         </div>
 
         {/* Table Body */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-100">
           {filteredBranches.map((branch) => (
-            <div key={branch._id} className="p-4 sm:p-6">
+            <div key={branch._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
               {/* Mobile Layout */}
               <div className="md:hidden space-y-3">
                 <div className="flex justify-between items-start">
@@ -120,7 +120,7 @@ export default function BranchList() {
                 
                 <div className="flex gap-2">
                   <Link href={`/branches/edit/${branch._id}`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full border-gray-300">
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </Button>
@@ -128,7 +128,7 @@ export default function BranchList() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="flex-1 text-red-600 hover:text-red-700"
+                    className="flex-1 text-red-600 hover:text-red-700 border-gray-300"
                     onClick={() => handleDeleteClick(branch)}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -138,7 +138,7 @@ export default function BranchList() {
               </div>
 
               {/* Desktop Layout - Properly Centered */}
-              <div className="hidden md:grid items-center hover:bg-gray-50 transition-colors" style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr 1fr", gap: "1rem"}}>
+              <div className="hidden md:grid items-center transition-colors" style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr 1fr", gap: "1rem"}}>
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="font-medium text-gray-900 break-words">{branch.branchName}</div>
                   <div className="text-xs text-gray-400">ID: {branch._id.slice(-8)}</div>
@@ -152,14 +152,14 @@ export default function BranchList() {
                 </div>
                 <div className="flex justify-center items-center gap-2">
                   <Link href={`/branches/edit/${branch._id}`}>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-gray-300">
                       <Edit className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 border-gray-300"
                     onClick={() => handleDeleteClick(branch)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -178,7 +178,7 @@ export default function BranchList() {
               {searchQuery ? 'No branches match your search criteria.' : 'Get started by adding your first branch.'}
             </p>
             <Link href="/branches/create">
-              <Button className="bg-red-600 hover:bg-red-700">
+              <Button className="bg-amber-700 hover:bg-amber-800 text-white">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Branch
               </Button>

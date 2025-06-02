@@ -45,71 +45,75 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Light theme with brown/amber colors */
+  --background: 45 100% 97%; /* Very light cream/beige background */
+  --foreground: 30 40% 15%; /* Dark brown text */
+  --card: 0 0% 100%; /* White cards */
+  --card-foreground: 30 40% 15%; /* Dark brown card text */
+  --popover: 0 0% 100%; /* White popovers */
+  --popover-foreground: 30 40% 15%; /* Dark brown popover text */
+  --primary: 25 95% 25%; /* Brown primary */
+  --primary-foreground: 0 0% 100%; /* White primary text */
+  --secondary: 45 25% 95%; /* Light beige secondary */
+  --secondary-foreground: 30 40% 15%; /* Dark brown secondary text */
+  --muted: 45 25% 95%; /* Light beige muted */
+  --muted-foreground: 30 25% 45%; /* Medium brown muted text */
+  --accent: 45 25% 95%; /* Light beige accent */
+  --accent-foreground: 30 40% 15%; /* Dark brown accent text */
+  --destructive: 0 70% 50%; /* Red destructive */
+  --destructive-foreground: 0 0% 100%; /* White destructive text */
+  --border: 45 30% 85%; /* Light brown border */
+  --input: 45 30% 85%; /* Light brown input border */
+  --ring: 25 70% 40%; /* Brown focus ring */
+  --chart-1: 25 70% 60%; /* Brown chart color 1 */
+  --chart-2: 35 80% 50%; /* Amber chart color 2 */
+  --chart-3: 45 90% 40%; /* Gold chart color 3 */
+  --chart-4: 15 60% 50%; /* Dark brown chart color 4 */
+  --chart-5: 40 70% 45%; /* Medium brown chart color 5 */
+  --sidebar: 45 15% 97%; /* Very light brown sidebar */
+  --sidebar-foreground: 30 40% 15%; /* Dark brown sidebar text */
+  --sidebar-primary: 25 95% 25%; /* Brown sidebar primary */
+  --sidebar-primary-foreground: 0 0% 100%; /* White sidebar primary text */
+  --sidebar-accent: 45 25% 90%; /* Light brown sidebar accent */
+  --sidebar-accent-foreground: 30 40% 15%; /* Dark brown sidebar accent text */
+  --sidebar-border: 45 30% 85%; /* Light brown sidebar border */
+  --sidebar-ring: 25 70% 40%; /* Brown sidebar ring */
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark theme with brown/amber colors */
+  --background: 25 15% 8%; /* Very dark brown background */
+  --foreground: 45 25% 95%; /* Light cream text */
+  --card: 25 20% 12%; /* Dark brown cards */
+  --card-foreground: 45 25% 95%; /* Light cream card text */
+  --popover: 25 20% 12%; /* Dark brown popovers */
+  --popover-foreground: 45 25% 95%; /* Light cream popover text */
+  --primary: 45 90% 85%; /* Light amber primary */
+  --primary-foreground: 25 15% 8%; /* Very dark brown primary text */
+  --secondary: 25 20% 20%; /* Dark brown secondary */
+  --secondary-foreground: 45 25% 95%; /* Light cream secondary text */
+  --muted: 25 20% 20%; /* Dark brown muted */
+  --muted-foreground: 45 15% 70%; /* Medium cream muted text */
+  --accent: 25 20% 20%; /* Dark brown accent */
+  --accent-foreground: 45 25% 95%; /* Light cream accent text */
+  --destructive: 0 62% 50%; /* Red destructive */
+  --destructive-foreground: 0 0% 100%; /* White destructive text */
+  --border: 25 15% 25%; /* Dark brown border */
+  --input: 25 15% 30%; /* Dark brown input border */
+  --ring: 45 70% 60%; /* Amber focus ring */
+  --chart-1: 45 70% 60%; /* Amber chart color 1 */
+  --chart-2: 35 60% 50%; /* Orange chart color 2 */
+  --chart-3: 25 50% 40%; /* Brown chart color 3 */
+  --chart-4: 15 40% 30%; /* Dark brown chart color 4 */
+  --chart-5: 40 55% 35%; /* Medium brown chart color 5 */
+  --sidebar: 25 20% 12%; /* Dark brown sidebar */
+  --sidebar-foreground: 45 25% 95%; /* Light cream sidebar text */
+  --sidebar-primary: 45 90% 85%; /* Light amber sidebar primary */
+  --sidebar-primary-foreground: 25 15% 8%; /* Very dark brown sidebar primary text */
+  --sidebar-accent: 25 20% 20%; /* Dark brown sidebar accent */
+  --sidebar-accent-foreground: 45 25% 95%; /* Light cream sidebar accent text */
+  --sidebar-border: 25 15% 25%; /* Dark brown sidebar border */
+  --sidebar-ring: 45 70% 60%; /* Amber sidebar ring */
 }
 
 @layer base {
@@ -118,5 +122,61 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Apply the cream/beige background to body */
+    background-color: #fffbeb;
+  }
+  
+  /* Custom brown theme utilities */
+  .bg-brown-theme {
+    background-color: #fffbeb;
+  }
+  
+  .text-brown-theme {
+    color: #92400e;
+  }
+  
+  .border-brown-theme {
+    border-color: #d97706;
+  }
+  
+  /* Status color overrides for brown theme */
+  .status-received {
+    @apply bg-blue-100 text-blue-800 border-blue-200;
+  }
+  
+  .status-assigned {
+    @apply bg-purple-100 text-purple-800 border-purple-200;
+  }
+  
+  .status-inspection {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+  }
+  
+  .status-waiting {
+    @apply bg-orange-100 text-orange-800 border-orange-200;
+  }
+  
+  .status-approved {
+    @apply bg-green-100 text-green-800 border-green-200;
+  }
+  
+  .status-service {
+    @apply bg-indigo-100 text-indigo-800 border-indigo-200;
+  }
+  
+  .status-finished {
+    @apply bg-teal-100 text-teal-800 border-teal-200;
+  }
+  
+  .status-delivered {
+    @apply bg-cyan-100 text-cyan-800 border-cyan-200;
+  }
+  
+  .status-completed {
+    @apply bg-emerald-100 text-emerald-800 border-emerald-200;
+  }
+  
+  .status-cancelled {
+    @apply bg-red-100 text-red-800 border-red-200;
   }
 }
