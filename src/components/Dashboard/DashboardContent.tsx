@@ -108,6 +108,7 @@ export default function DashboardContent() {
   };
 
 // Filter services based on time filter
+// Filter services based on time filter
 const getFilteredServicesByTime = (timeFilter: string) => {
   const now = new Date();
   
@@ -122,20 +123,32 @@ const getFilteredServicesByTime = (timeFilter: string) => {
         return serviceDateOnly.getTime() === today.getTime();
         
       case 'Last Week':
-        // Services from last 7 days (from 7 days ago to today)
-        const sevenDaysAgo = new Date(now);
-        sevenDaysAgo.setDate(now.getDate() - 7);
-        const weekStart = new Date(sevenDaysAgo.getFullYear(), sevenDaysAgo.getMonth(), sevenDaysAgo.getDate());
+        // Services from 7 days ago (excluding today)
+        // From 8 days ago to 1 day ago
+        const eightDaysAgo = new Date(now);
+        eightDaysAgo.setDate(now.getDate() - 8);
+        const oneDayAgo = new Date(now);
+        oneDayAgo.setDate(now.getDate() - 1);
+        
+        const weekStartDate = new Date(eightDaysAgo.getFullYear(), eightDaysAgo.getMonth(), eightDaysAgo.getDate());
+        const weekEndDate = new Date(oneDayAgo.getFullYear(), oneDayAgo.getMonth(), oneDayAgo.getDate());
         const serviceDateForWeek = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
-        return serviceDateForWeek >= weekStart;
+        
+        return serviceDateForWeek >= weekStartDate && serviceDateForWeek <= weekEndDate;
         
       case 'Last Month':
-        // Services from last 30 days (from 30 days ago to today)
-        const thirtyDaysAgo = new Date(now);
-        thirtyDaysAgo.setDate(now.getDate() - 30);
-        const monthStart = new Date(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate());
-        const serviceDateForMonth = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
-        return serviceDateForMonth >= monthStart;
+        // Services from previous month only (not current month)
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // First day of last month
+        
+        // Last day of previous month
+        const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0); // 0th day = last day of previous month
+        
+        const serviceYear = serviceDate.getFullYear();
+        const serviceMonth = serviceDate.getMonth();
+        const lastMonthYear = lastMonth.getFullYear();
+        const lastMonthMonth = lastMonth.getMonth();
+        
+        return serviceYear === lastMonthYear && serviceMonth === lastMonthMonth;
         
       default:
         // Default to today only

@@ -45,9 +45,10 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
 
 useEffect(() => {
-  if (staff && branches.length > 0) {
+  if (staff && !isFormInitialized) {
     let branchId = '';
     
     if (staff.branch) {
@@ -69,8 +70,10 @@ useEffect(() => {
       address: staff.address || '',
       action: staff.action || 'Active'
     });
+    
+    setIsFormInitialized(true);
   }
-}, [staff, branches]);
+}, [staff, branches, isFormInitialized]);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -146,15 +149,6 @@ useEffect(() => {
 
   const inputClasses = "h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
   const errorInputClasses = "border-red-500 focus:border-red-500 focus:ring-red-500";
-
-  // Helper function to get selected branch name
-  const getSelectedBranchName = () => {
-    if (formData.branch) {
-      const selectedBranch = branches.find(b => b._id === formData.branch);
-      return selectedBranch?.branchName || 'Select branch';
-    }
-    return 'Select branch';
-  };
 
   if (isLoading) {
     return <SkeletonForm />;
@@ -335,9 +329,7 @@ useEffect(() => {
                             validationErrors.branch ? errorInputClasses : ''
                           }`}
                         >
-                          <SelectValue placeholder="Select branch">
-                            {getSelectedBranchName()}
-                          </SelectValue>
+                          <SelectValue placeholder="Select branch" />
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-200">
                           {branches.map((branch) => (
