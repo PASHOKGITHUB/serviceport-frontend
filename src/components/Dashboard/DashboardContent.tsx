@@ -15,7 +15,9 @@ import {
   ArrowUp,
   IndianRupee,
   ChevronDown,
-  Loader2
+  Loader2,
+  TrendingDown,
+  ArrowDown
 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { useServices } from '@/hooks/useServices';
@@ -46,7 +48,7 @@ interface DateGroupedServices {
 export default function DashboardContent() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [timeFilter, setTimeFilter] = useState('Last Month');
+  const [timeFilter, setTimeFilter] = useState('Today');
   const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
   const [newServiceLoading, setNewServiceLoading] = useState(false);
@@ -105,30 +107,44 @@ export default function DashboardContent() {
     }
   };
 
-  // Filter services based on time filter
-  const getFilteredServicesByTime = (timeFilter: string) => {
-    const now = new Date();
-    let filterDate: Date;
-
+// Filter services based on time filter
+const getFilteredServicesByTime = (timeFilter: string) => {
+  const now = new Date();
+  
+  return services.filter(service => {
+    const serviceDate = new Date(service.createdAt);
+    
     switch (timeFilter) {
       case 'Today':
-        filterDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        break;
+        // Only today's services - same date
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const serviceDateOnly = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
+        return serviceDateOnly.getTime() === today.getTime();
+        
       case 'Last Week':
-        filterDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-        break;
+        // Services from last 7 days (from 7 days ago to today)
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        const weekStart = new Date(sevenDaysAgo.getFullYear(), sevenDaysAgo.getMonth(), sevenDaysAgo.getDate());
+        const serviceDateForWeek = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
+        return serviceDateForWeek >= weekStart;
+        
       case 'Last Month':
-        filterDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
+        // Services from last 30 days (from 30 days ago to today)
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        const monthStart = new Date(thirtyDaysAgo.getFullYear(), thirtyDaysAgo.getMonth(), thirtyDaysAgo.getDate());
+        const serviceDateForMonth = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
+        return serviceDateForMonth >= monthStart;
+        
       default:
-        filterDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Default to today only
+        const defaultToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const defaultServiceDate = new Date(serviceDate.getFullYear(), serviceDate.getMonth(), serviceDate.getDate());
+        return defaultServiceDate.getTime() === defaultToday.getTime();
     }
-
-    return services.filter(service => {
-      const serviceDate = new Date(service.createdAt);
-      return serviceDate >= filterDate;
-    });
-  };
+  });
+};
 
   // Get filtered services based on selected time filter
   const filteredServicesByTime = getFilteredServicesByTime(timeFilter);
@@ -186,6 +202,66 @@ export default function DashboardContent() {
       }
     }).reduce((sum, service) => sum + (service.serviceCost || 0), 0);
   };
+
+  const calculateRevenueTrend = () => {
+  const now = new Date();
+  
+  // Calculate current period (last 26 days)
+  const currentPeriodStart = new Date(now.getTime() - (26 * 24 * 60 * 60 * 1000));
+  const currentPeriodRevenue = services.filter(service => {
+    if (!service.serviceCost) return false;
+    
+    let revenueDate: Date;
+    if (service.deliveredDate) {
+      revenueDate = new Date(service.deliveredDate);
+    } else if (service.action === 'Completed') {
+      revenueDate = new Date(service.updatedAt);
+    } else {
+      return false;
+    }
+    
+    return revenueDate >= currentPeriodStart && revenueDate <= now;
+  }).reduce((sum, service) => sum + (service.serviceCost || 0), 0);
+  
+  // Calculate previous period (26 days before the current period)
+  const previousPeriodStart = new Date(currentPeriodStart.getTime() - (26 * 24 * 60 * 60 * 1000));
+  const previousPeriodEnd = currentPeriodStart;
+  const previousPeriodRevenue = services.filter(service => {
+    if (!service.serviceCost) return false;
+    
+    let revenueDate: Date;
+    if (service.deliveredDate) {
+      revenueDate = new Date(service.deliveredDate);
+    } else if (service.action === 'Completed') {
+      revenueDate = new Date(service.updatedAt);
+    } else {
+      return false;
+    }
+    
+    return revenueDate >= previousPeriodStart && revenueDate < previousPeriodEnd;
+  }).reduce((sum, service) => sum + (service.serviceCost || 0), 0);
+  
+  // Calculate percentage change
+  let percentageChange = 0;
+  let isIncrease = true;
+  
+  if (previousPeriodRevenue === 0) {
+    // If no previous revenue, show 100% increase if current revenue > 0
+    percentageChange = currentPeriodRevenue > 0 ? 100 : 0;
+    isIncrease = currentPeriodRevenue > 0;
+  } else {
+    percentageChange = ((currentPeriodRevenue - previousPeriodRevenue) / previousPeriodRevenue) * 100;
+    isIncrease = percentageChange >= 0;
+  }
+  
+  return {
+    percentage: Math.abs(percentageChange).toFixed(1),
+    isIncrease,
+    currentRevenue: currentPeriodRevenue,
+    previousRevenue: previousPeriodRevenue
+  };
+};
+const revenueTrend = calculateRevenueTrend();
 
   const todayRevenue = calculateRevenue('today');
   const weeklyRevenue = calculateRevenue('week');
@@ -270,10 +346,21 @@ export default function DashboardContent() {
                 </div>
                 <span className="text-xl font-bold text-black">Revenue</span>
               </div>
-              <div className="flex items-center gap-1 text-sm text-green-600">
-                <span className="font-medium">+8.4%</span>
-                <TrendingUp className="h-3 w-3" />
-                <ArrowUp className="h-3 w-3" />
+              <div className={`flex items-center gap-1 text-sm ${revenueTrend.isIncrease ? 'text-green-600' : 'text-red-600'}`}>
+                <span className="font-medium">
+                  {revenueTrend.isIncrease ? '+' : '-'}{revenueTrend.percentage}%
+                </span>
+                {revenueTrend.isIncrease ? (
+                  <>
+                    <TrendingUp className="h-3 w-3" />
+                    <ArrowUp className="h-3 w-3" />
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="h-3 w-3" />
+                    <ArrowDown className="h-3 w-3" />
+                  </>
+                )}
                 <span className="text-xs text-gray-500 ml-1">Last 26 Days</span>
               </div>
             </div>
