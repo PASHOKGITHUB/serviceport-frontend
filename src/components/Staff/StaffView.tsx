@@ -5,18 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronRight, Pencil } from 'lucide-react';
+import { ChevronRight, Pencil, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useStaffMember } from '@/hooks/useStaff';
 import { SkeletonForm } from '@/components/ui/skeleton-form';
+import { useState } from 'react';
 
 interface StaffViewProps {
   staffId: string;
 }
 
 export default function StaffView({ staffId }: StaffViewProps) {
-  // const router = useRouter();
+  const router = useRouter();
   const { data: staff, isLoading } = useStaffMember(staffId);
+  const [isEditLoading, setIsEditLoading] = useState(false);
+
+  const handleEditClick = async () => {
+    setIsEditLoading(true);
+    router.push(`/staff/edit/${staffId}`);
+  };
 
   if (isLoading) {
     return <SkeletonForm />;
@@ -28,7 +36,7 @@ export default function StaffView({ staffId }: StaffViewProps) {
         <h2 className="text-xl sm:text-2xl font-semibold text-black mb-2">Staff member not found</h2>
         <p className="text-gray-600 mb-4">The staff member you&apos;re trying to view doesn&apos;t exist.</p>
         <Link href="/staff">
-          <Button className="bg-amber-700 hover:bg-amber-800 text-white">
+          <Button className="bg-[#925D00] hover:bg-[#7A4D00] text-white">
             Back to Staff List
           </Button>
         </Link>
@@ -54,14 +62,23 @@ export default function StaffView({ staffId }: StaffViewProps) {
 
           {/* Action buttons */}
           <div className="flex gap-3">
-            <Link href={`/staff/edit/${staffId}`}>
-              <Button 
-                className="bg-amber-700 hover:bg-amber-800 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit
-              </Button>
-            </Link>
+            <Button 
+              onClick={handleEditClick}
+              className="bg-[#925D00] hover:bg-[#7A4D00] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 min-w-[80px] disabled:opacity-50"
+              disabled={isEditLoading}
+            >
+              {isEditLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>

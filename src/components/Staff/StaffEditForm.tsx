@@ -46,28 +46,31 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  useEffect(() => {
-    if (staff) {
-      let branchId = '';
-      
-      if (staff.branch) {
-        if (typeof staff.branch === 'object' && staff.branch._id) {
-          branchId = staff.branch._id;
-        } else if (typeof staff.branch === 'string') {
-          branchId = staff.branch;
-        }
+useEffect(() => {
+  if (staff && branches.length > 0) {
+    let branchId = '';
+    
+    if (staff.branch) {
+      if (typeof staff.branch === 'object' && staff.branch._id) {
+        branchId = staff.branch._id;
+      } else if (typeof staff.branch === 'string') {
+        branchId = staff.branch;
       }
-      
-      setFormData({
-        staffName: staff.staffName || '',
-        contactNumber: staff.contactNumber || '',
-        role: staff.role || 'Staff',
-        branch: branchId,
-        address: staff.address || '',
-        action: staff.action || 'Active'
-      });
     }
-  }, [staff]);
+    
+    console.log('Setting branch ID:', branchId);
+    console.log('Available branches:', branches);
+    
+    setFormData({
+      staffName: staff.staffName || '',
+      contactNumber: staff.contactNumber || '',
+      role: staff.role || 'Staff',
+      branch: branchId,
+      address: staff.address || '',
+      action: staff.action || 'Active'
+    });
+  }
+}, [staff, branches]);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -143,6 +146,15 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
 
   const inputClasses = "h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
   const errorInputClasses = "border-red-500 focus:border-red-500 focus:ring-red-500";
+
+  // Helper function to get selected branch name
+  const getSelectedBranchName = () => {
+    if (formData.branch) {
+      const selectedBranch = branches.find(b => b._id === formData.branch);
+      return selectedBranch?.branchName || 'Select branch';
+    }
+    return 'Select branch';
+  };
 
   if (isLoading) {
     return <SkeletonForm />;
@@ -323,15 +335,14 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
                             validationErrors.branch ? errorInputClasses : ''
                           }`}
                         >
-                          <SelectValue placeholder="Select branch" />
+                          <SelectValue placeholder="Select branch">
+                            {getSelectedBranchName()}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-200">
                           {branches.map((branch) => (
                             <SelectItem key={branch._id} value={branch._id}>
-                              <div className="flex flex-col">
-                                <span className="font-medium text-black">{branch.branchName}</span>
-                                <span className="text-sm text-gray-500">{branch.location}</span>
-                              </div>
+                              {branch.branchName}
                             </SelectItem>
                           ))}
                         </SelectContent>
