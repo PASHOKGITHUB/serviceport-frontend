@@ -42,7 +42,7 @@ ApiClient.interceptors.response.use(
     
     // Clear tokens on 401 (except for auth endpoints)
     if (status === 401) {
-      const isAuthRequest = url?.includes('/auth/login') || url?.includes('/auth/register');
+      const isAuthRequest = url?.includes('/login') || url?.includes('/auth/register');
       
       if (!isAuthRequest) {
         Cookies.remove('token', { path: '/' });

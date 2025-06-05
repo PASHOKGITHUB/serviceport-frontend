@@ -34,6 +34,7 @@
 import { BaseEntity } from './common';
 
 export interface Staff extends BaseEntity {
+  address: string;
   staffName: string;
   contactNumber: string;
   role: StaffRole;
@@ -57,6 +58,7 @@ export interface CreateStaffRequest {
   role: StaffRole;
   branch: string;
   action?: StaffStatus;
+  address: string;
   specialization?: string;
 }
 
@@ -66,7 +68,7 @@ export interface UpdateStaffRequest {
   role?: StaffRole;
   branch?: string;
   action?: StaffStatus;
-  // UI helper fields
+  address?: string;
   specialization?: string;
   isActive?: boolean;
 }

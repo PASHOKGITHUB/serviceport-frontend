@@ -14,6 +14,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import Image from 'next/image';
 
 const sidebarItems = [
   {
@@ -69,22 +70,26 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed top-0 left-0 h-full z-50 flex flex-col bg-black transition-transform duration-300 w-64",
+        "fixed top-20 left-0 h-[calc(100vh-5rem)] z-50 flex flex-col transition-transform duration-300 w-64",
+        "bg-[#0A0A0A]",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        {/* Logo and close button */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+        {/* Logo section - only visible on mobile */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="font-bold text-lg sm:text-xl">
-              <span className="text-red-500">RENT O</span>
-              <span className="text-white"> RENT</span>
-            </div>
+            <Image 
+              src="/logo.svg" 
+              alt="Rent O Rent Logo" 
+              width={32}
+              height={32}
+              // className="h-8 w-auto"
+            />
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(false)}
-            className="lg:hidden text-white hover:bg-gray-800"
+            className="text-white hover:bg-gray-800"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -101,15 +106,28 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm sm:text-base",
+                  "flex items-center gap-3 px-3 py-3 transition-colors relative",
+                  "font-inter font-medium text-base leading-[121%] tracking-[0.1px]",
                   isActive 
-                    ? "bg-amber-700 text-white" 
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    ? "bg-white text-amber-600 shadow-sm -mx-4 px-7" 
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg"
                 )}
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 500,
+                  fontSize: '16px',
+                  lineHeight: '121%',
+                  letterSpacing: '0.1px',
+                  verticalAlign: 'middle',
+                  borderRadius: isActive ? '50px 0 0 50px' : '12px'
+                }}
                 onClick={() => setIsOpen(false)} // Close on mobile
               >
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="font-medium">{item.title}</span>
+                <Icon className={cn(
+                  "h-5 w-5 flex-shrink-0",
+                  isActive ? "text-amber-600" : ""
+                )} />
+                <span>{item.title}</span>
               </Link>
             );
           })}

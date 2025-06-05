@@ -3,39 +3,42 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
+  const { pathname } = request.nextUrl;
   
-  // Public routes that don't require authentication
-  const publicRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  console.log('🔍 Middleware check:', { pathname, hasToken: !!token });
   
-  // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/services', '/staff', '/branches', '/reports'];
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
+  // Define protected routes
+  const protectedPaths = ['/dashboard', '/profile', '/settings'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
   
-  // If no token and trying to access protected route, redirect to login
-  if (!token && isProtectedRoute) {
-    const loginUrl = new URL('/auth/login', request.url);
-    if (pathname !== '/') {
-      loginUrl.searchParams.set('redirect', pathname);
-    }
+  // Define auth routes
+  const authPaths = ['/login', '/register'];
+  const isAuthPath = authPaths.some(path => pathname.startsWith(path));
+  
+  // Don't redirect the root path here - let the component handle it
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+  
+  // Protect routes that require authentication
+  if (isProtectedPath && !token) {
+    console.log('🚫 Middleware: Protected route without token, redirecting to login');
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
   
-  // If has token and trying to access public auth pages, redirect to dashboard
-  if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-  
-  // Redirect root to dashboard if authenticated
-  if (token && pathname === '/') {
+  // Redirect authenticated users away from auth pages
+  if (isAuthPath && token) {
+    console.log('✅ Middleware: Authenticated user on auth page, redirecting to dashboard');
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
   
   return NextResponse.next();
 }
 
+// Configure which paths the middleware should run on
 export const config = {
   matcher: [
     /*
@@ -44,8 +47,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - Any file with an extension (like .png, .css, .js)
+     * - public folder files
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

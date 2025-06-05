@@ -7,15 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Save, X, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ChevronRight, Save, AlertCircle, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useStaffMember, useUpdateStaff } from '@/hooks/useStaff';
 import { useBranches } from '@/hooks/useBranches';
-import type { UpdateStaffRequest } from '@/domain/entities/staff';
+import { SkeletonForm } from '@/components/ui/skeleton-form';
+import type { UpdateStaffRequest, StaffRole } from '@/domain/entities/staff';
+import type { ApiError } from '@/types/error';
 
 interface StaffEditFormProps {
   staffId: string;
+}
+
+interface ValidationErrors {
+  staffName?: string;
+  contactNumber?: string;
+  role?: string;
+  branch?: string;
+  address?: string;
 }
 
 export default function StaffEditForm({ staffId }: StaffEditFormProps) {
@@ -27,68 +38,114 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
   const [formData, setFormData] = useState<UpdateStaffRequest>({
     staffName: '',
     contactNumber: '',
-    role: undefined,
-    specialization: '',
+    role: 'Staff',
     branch: '',
-    isActive: true
+    address: '',
+    action: 'Active'
   });
 
-  const [isFloatingVisible, setIsFloatingVisible] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
-  // Populate form with staff data
   useEffect(() => {
     if (staff) {
+      let branchId = '';
+      
+      if (staff.branch) {
+        if (typeof staff.branch === 'object' && staff.branch._id) {
+          branchId = staff.branch._id;
+        } else if (typeof staff.branch === 'string') {
+          branchId = staff.branch;
+        }
+      }
+      
       setFormData({
         staffName: staff.staffName || '',
         contactNumber: staff.contactNumber || '',
-        role: staff.role,
-        specialization: staff.specialization || '',
-        branch: staff.branch?._id || '',
-        isActive: staff.isActive ?? true
+        role: staff.role || 'Staff',
+        branch: branchId,
+        address: staff.address || '',
+        action: staff.action || 'Active'
       });
     }
   }, [staff]);
 
-  // Show floating buttons on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsFloatingVisible(window.scrollY > 200);
-    };
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (!formData.staffName?.trim()) {
+      errors.staffName = 'Full name is required';
+    }
 
-  const handleInputChange = (field: keyof UpdateStaffRequest, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (!formData.contactNumber?.trim()) {
+      errors.contactNumber = 'Contact number is required';
+    } else if (formData.contactNumber.replace(/\D/g, '').length < 10) {
+      errors.contactNumber = 'Contact number must be at least 10 digits';
+    }
+
+    if (!formData.role) {
+      errors.role = 'Please select a role';
+    }
+
+    if (!formData.branch) {
+      errors.branch = 'Please select a branch';
+    }
+
+    if (!formData.address?.trim()) {
+      errors.address = 'Address is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setValidationErrors({});
+
+    if (!validateForm()) {
+      toast.error('Validation Error', {
+        description: 'Please fix the errors below and try again.',
+      });
+      return;
+    }
+    
     try {
-      // Convert "none" back to empty string for the API
-      const dataToSubmit = {
-        ...formData,
-        branch: formData.branch === 'none' ? '' : formData.branch
-      };
-      
       await updateStaffMutation.mutateAsync({
         id: staffId,
-        data: dataToSubmit
+        data: formData
       });
+      toast.success('Staff member updated successfully!');
       router.push('/staff');
-    } catch (error) {
-      console.error('Error updating staff:', error);
+    } catch (err) {
+      console.error('Error updating staff:', err);
+      const error= err as ApiError;
+      
+      if (error?.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+        
+        if (errorMessage.includes('Contact number must be at least 10 digits')) {
+          setValidationErrors({ contactNumber: 'Contact number must be at least 10 digits' });
+        }
+        
+        toast.error('Error', {
+          description: errorMessage,
+        });
+      } else {
+        toast.error('Failed to update staff member. Please try again.');
+      }
     }
   };
 
   const handleCancel = () => {
-    router.push('/staff');
+    router.back();
   };
 
+  const inputClasses = "h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
+  const errorInputClasses = "border-red-500 focus:border-red-500 focus:ring-red-500";
+
   if (isLoading) {
-    return <StaffEditSkeleton />;
+    return <SkeletonForm />;
   }
 
   if (!staff) {
@@ -98,8 +155,7 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
         <p className="text-gray-600 mb-4">The staff member you&apos;re trying to edit doesn&apos;t exist.</p>
         <Link href="/staff">
           <Button className="bg-amber-700 hover:bg-amber-800 text-white">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Staff
+            Back to Staff List
           </Button>
         </Link>
       </div>
@@ -107,217 +163,220 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-4xl mx-auto animate-fade-in pb-20">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-          <Link href="/staff">
-            <Button variant="outline" size="sm" className="mb-2 sm:mb-0 border-gray-300">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+    <div className="min-h-screen">
+      {/* Header with buttons */}
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/staff" className="text-gray-600 hover:text-gray-900 transition-colors">
+              Staff
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="text-amber-700 font-medium">Edit Staff Details</span>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleCancel}
+              type="button" 
+              variant="outline" 
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Cancel
             </Button>
-          </Link>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-black break-words">
-              Edit Staff Member
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base break-words">
-              Update staff member information
-            </p>
+            <Button 
+              onClick={handleSubmit}
+              className="bg-amber-700 hover:bg-amber-800 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+              disabled={updateStaffMutation.isPending}
+            >
+              <Save className="h-4 w-4" />
+              {updateStaffMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Information */}
-        <Card className="hover:shadow-sm transition-shadow border-gray-200">
-          <CardHeader className="bg-gray-200 rounded-t-lg">
-            <CardTitle className="text-lg sm:text-xl text-black">Personal Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 bg-white">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="staffName" className="text-black">Staff Name *</Label>
-                <Input
-                  id="staffName"
-                  value={formData.staffName}
-                  onChange={(e) => handleInputChange('staffName', e.target.value)}
-                  placeholder="Enter staff name"
-                  className="border-gray-300"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactNumber" className="text-black">Contact Number *</Label>
-                <Input
-                  id="contactNumber"
-                  value={formData.contactNumber}
-                  onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                  placeholder="Enter contact number"
-                  className="border-gray-300"
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Professional Information */}
-        <Card className="hover:shadow-sm transition-shadow border-gray-200">
-          <CardHeader className="bg-gray-200 rounded-t-lg">
-            <CardTitle className="text-lg sm:text-xl text-black">Professional Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 bg-white">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-black">Role *</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => handleInputChange('role', value as 'manager' | 'technician')}
-                >
-                  <SelectTrigger className="border-gray-300">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="technician">Technician</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="specialization" className="text-black">Specialization</Label>
-                <Input
-                  id="specialization"
-                  value={formData.specialization}
-                  onChange={(e) => handleInputChange('specialization', e.target.value)}
-                  placeholder="Enter specialization (optional)"
-                  className="border-gray-300"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="branch" className="text-black">Branch</Label>
-                <Select
-                  value={formData.branch || 'none'}
-                  onValueChange={(value) => handleInputChange('branch', value)}
-                >
-                  <SelectTrigger className="border-gray-300">
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="none">No Branch</SelectItem>
-                    {branches.map((branch) => (
-                      <SelectItem key={branch._id} value={branch._id}>
-                        {branch.branchName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="isActive" className="text-black">Status *</Label>
-                <Select
-                  value={formData.isActive ? 'active' : 'inactive'}
-                  onValueChange={(value) => handleInputChange('isActive', value === 'active')}
-                >
-                  <SelectTrigger className="border-gray-300">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Desktop Action Buttons */}
-        <div className="hidden sm:flex justify-end gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={updateStaffMutation.isPending}
-            className="border-gray-300"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="bg-amber-700 hover:bg-amber-800 text-white"
-            disabled={updateStaffMutation.isPending}
-          >
-            {updateStaffMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Update Staff
-          </Button>
-        </div>
-      </form>
-
-      {/* Floating Action Buttons for Mobile */}
-      <div className={`sm:hidden fixed bottom-6 left-4 right-4 z-50 transition-all duration-300 ${
-        isFloatingVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
-      }`}>
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={updateStaffMutation.isPending}
-            className="flex-1 bg-white shadow-lg border-gray-300"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            className="flex-1 bg-amber-700 hover:bg-amber-800 text-white shadow-lg"
-            disabled={updateStaffMutation.isPending}
-          >
-            {updateStaffMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Update
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StaffEditSkeleton() {
-  return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Skeleton className="h-10 w-20" />
-        <Skeleton className="h-8 w-48" />
-      </div>
-      <div className="space-y-6">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Card key={i} className="border-gray-200">
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
+      {/* Form content */}
+      <div className="max-w-4xl mx-auto p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Staff Details Card */}
+          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none">
+            <CardHeader className="py-6 bg-[#EFEAE3] w-full m-0 rounded-none">
+              <CardTitle className="text-lg text-center text-black font-medium">Staff Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, j) => (
-                  <div key={j} className="space-y-2">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-10 w-full" />
+            <CardContent className="p-8 bg-transparent">
+              <div className="space-y-8">
+                {/* First Row - Full Name and Contact Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label htmlFor="fullName" className="text-sm font-medium text-black">
+                      Full name
+                    </Label>
+                    <Input
+                      id="fullName"
+                      value={formData.staffName}
+                      onChange={(e) => {
+                        setFormData({ ...formData, staffName: e.target.value });
+                        if (validationErrors.staffName) {
+                          setValidationErrors({ ...validationErrors, staffName: undefined });
+                        }
+                      }}
+                      placeholder="Full name"
+                      className={`${inputClasses} ${
+                        validationErrors.staffName ? errorInputClasses : ''
+                      }`}
+                      required
+                    />
+                    {validationErrors.staffName && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{validationErrors.staffName}</span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <div className="space-y-3">
+                    <Label htmlFor="contactNumber" className="text-sm font-medium text-black">
+                      Contact number
+                    </Label>
+                    <Input
+                      id="contactNumber"
+                      value={formData.contactNumber}
+                      onChange={(e) => {
+                        setFormData({ ...formData, contactNumber: e.target.value });
+                        if (validationErrors.contactNumber) {
+                          setValidationErrors({ ...validationErrors, contactNumber: undefined });
+                        }
+                      }}
+                      placeholder="Phone number"
+                      className={`${inputClasses} ${
+                        validationErrors.contactNumber ? errorInputClasses : ''
+                      }`}
+                      required
+                    />
+                    {validationErrors.contactNumber && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{validationErrors.contactNumber}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Second Row - Select Role and Branch */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3 w-full">
+                    <Label htmlFor="selectRole" className="text-sm font-medium text-black">
+                      Select Role
+                    </Label>
+                    <div className="w-full">
+                      <Select 
+                        value={formData.role} 
+                        onValueChange={(value: StaffRole) => {
+                          setFormData({ ...formData, role: value });
+                          if (validationErrors.role) {
+                            setValidationErrors({ ...validationErrors, role: undefined });
+                          }
+                        }}
+                      >
+                        <SelectTrigger 
+                          id="selectRole"
+                          className={`${inputClasses} ${
+                            validationErrors.role ? errorInputClasses : ''
+                          }`}
+                        >
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-200">
+                          <SelectItem value="Technician">Technician</SelectItem>
+                          <SelectItem value="Staff">Staff</SelectItem>
+                          <SelectItem value="Manager">Manager</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {validationErrors.role && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{validationErrors.role}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3 w-full">
+                    <Label htmlFor="branch" className="text-sm font-medium text-black">
+                      Branch
+                    </Label>
+                    <div className="w-full">
+                      <Select 
+                        value={formData.branch} 
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, branch: value });
+                          if (validationErrors.branch) {
+                            setValidationErrors({ ...validationErrors, branch: undefined });
+                          }
+                        }}
+                      >
+                        <SelectTrigger 
+                          id="branch"
+                          className={`${inputClasses} ${
+                            validationErrors.branch ? errorInputClasses : ''
+                          }`}
+                        >
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-200">
+                          {branches.map((branch) => (
+                            <SelectItem key={branch._id} value={branch._id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-black">{branch.branchName}</span>
+                                <span className="text-sm text-gray-500">{branch.location}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {validationErrors.branch && (
+                      <div className="flex items-center gap-2 text-red-600 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{validationErrors.branch}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Third Row - Address (Full Width) */}
+                <div className="space-y-3">
+                  <Label htmlFor="address" className="text-sm font-medium text-black">
+                    Address
+                  </Label>
+                  <Textarea
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value });
+                      if (validationErrors.address) {
+                        setValidationErrors({ ...validationErrors, address: undefined });
+                      }
+                    }}
+                    placeholder="ABC HOUSE BCD TOWN EFG POST HIJ COLONY,ABC HOUSE BCD TOWN EFG POST HIJ COLONY"
+                    className={`min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
+                      validationErrors.address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                    }`}
+                    required
+                  />
+                  {validationErrors.address && (
+                    <div className="flex items-center gap-2 text-red-600 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>{validationErrors.address}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
-        ))}
+        </form>
       </div>
     </div>
   );
