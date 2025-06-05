@@ -12,6 +12,7 @@ interface ReportFilters {
   endDate?: string;
   status?: string;
   technician?: string;
+  branchId?: string; // Added branchId filter
 }
 
 // Get all services
@@ -23,6 +24,7 @@ export const getServices = async (filters?: ServiceFilters) => {
   if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
   if (filters?.dateTo) params.append('dateTo', filters.dateTo);
   if (filters?.search) params.append('search', filters.search);
+  if (filters?.branchId) params.append('branchId', filters.branchId);
   
   const queryString = params.toString();
   const url = queryString ? `/services?${queryString}` : '/services';
@@ -91,6 +93,12 @@ export const getServicesByTechnician = async (technicianId: string) => {
   return response.data.data.services;
 };
 
+// Get services by branch - NEW FUNCTION
+export const getServicesByBranch = async (branchId: string) => {
+  const response = await ApiClient.get(`/services/branch/${branchId}`);
+  return response.data.data.services;
+};
+
 // Get services report
 export const getServicesReport = async (filters?: ReportFilters) => {
   const params = new URLSearchParams();
@@ -99,6 +107,7 @@ export const getServicesReport = async (filters?: ReportFilters) => {
   if (filters?.endDate) params.append('endDate', filters.endDate);
   if (filters?.status) params.append('status', filters.status);
   if (filters?.technician) params.append('technician', filters.technician);
+  if (filters?.branchId) params.append('branchId', filters.branchId);
   
   const queryString = params.toString();
   const url = queryString ? `/services/report?${queryString}` : '/services/report';

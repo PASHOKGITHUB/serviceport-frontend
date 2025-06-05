@@ -41,6 +41,7 @@ export default function CreateServiceForm() {
     branchId: '',
   });
 
+
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
   const validateForm = (): boolean => {
@@ -155,12 +156,15 @@ export default function CreateServiceForm() {
       toast.error('Validation Error', {
         description: 'Please fix the errors below and try again.',
       });
+
       return;
     }
 
     try {
       await createServiceMutation.mutateAsync(formData);
+
       toast.success('Service created successfully!');
+
       router.push('/services');
     } catch (err) {
       console.error('Error creating service:', err);
@@ -242,6 +246,7 @@ export default function CreateServiceForm() {
                   }`}
                 >
                   <SelectValue placeholder="Select branch" />
+
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200">
                   {branches.map((branch) => (
@@ -255,6 +260,7 @@ export default function CreateServiceForm() {
                 </SelectContent>
               </Select>
             </div>
+
             {validationErrors.branchId && (
               <div className="flex items-center gap-2 text-red-600 text-sm">
                 <AlertCircle className="h-4 w-4" />
@@ -262,6 +268,7 @@ export default function CreateServiceForm() {
               </div>
             )}
           </div>
+
 
           {/* Customer Details Card */}
           <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
@@ -291,11 +298,13 @@ export default function CreateServiceForm() {
                       }`}
                       required
                     />
+
                     {validationErrors.customerName && (
                       <div className="flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle className="h-4 w-4" />
                         <span>{validationErrors.customerName}</span>
                       </div>
+
                     )}
                   </div>
                   <div className="space-y-3">
@@ -347,11 +356,13 @@ export default function CreateServiceForm() {
                       }`}
                       required
                     />
+
                     {validationErrors.location && (
                       <div className="flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle className="h-4 w-4" />
                         <span>{validationErrors.location}</span>
                       </div>
+
                     )}
                   </div>
                   <div className="space-y-3">
@@ -373,11 +384,13 @@ export default function CreateServiceForm() {
                       }`}
                       required
                     />
+
                     {validationErrors.address && (
                       <div className="flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle className="h-4 w-4" />
                         <span>{validationErrors.address}</span>
                       </div>
+
                     )}
                   </div>
                 </div>
@@ -517,6 +530,7 @@ export default function CreateServiceForm() {
                   </div>
                 ))}
                 
+
                 {/* Add Product Button */}
                 <div className="flex justify-end">
                   <Button 
@@ -528,6 +542,7 @@ export default function CreateServiceForm() {
                     <Plus className="h-4 w-4" />
                     Add Product
                   </Button>
+
                 </div>
               </div>
             </CardContent>
