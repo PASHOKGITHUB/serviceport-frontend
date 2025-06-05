@@ -141,7 +141,7 @@ const getFilteredServicesByTime = (timeFilter: string) => {
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1); // First day of last month
         
         // Last day of previous month
-        const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0); // 0th day = last day of previous month
+        // const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0); // 0th day = last day of previous month
         
         const serviceYear = serviceDate.getFullYear();
         const serviceMonth = serviceDate.getMonth();
