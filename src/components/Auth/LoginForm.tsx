@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLogin } from '@/hooks/useAuth';
 import type { LoginRequest } from '@/domain/entities/auth';
+import Image from 'next/image';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function LoginForm() {
       await loginMutation.mutateAsync(formData);
       router.push('/dashboard');
     } catch (err) {
-        console.error('Error during login:', err);
+      console.error('Error during login:', err);
       // Error is handled in the mutation
     }
   };
@@ -33,19 +34,22 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md animate-fade-in shadow-lg border border-gray-200 overflow-hidden">
-        <CardHeader className="bg-white border-b border-gray-100 p-6 text-center space-y-4">
-          <div className="mb-4">
-            <div className="font-bold text-2xl sm:text-3xl">
-              <span className="text-amber-700">CAMERA</span>
-              <span className="text-gray-900"> PORT</span>
-            </div>
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <Card className="w-full max-w-md animate-fade-in shadow-lg border border-gray-200">
+        <CardHeader className="bg-white border-b border-gray-100 p-6 text-center space-y-2">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={200}
+              height={60}
+              className="object-contain"
+            />
           </div>
           <CardTitle className="text-xl sm:text-2xl text-black font-semibold">Welcome Back</CardTitle>
           <p className="text-gray-600 text-sm">Sign in to your account to continue</p>
         </CardHeader>
-        <CardContent className="bg-white p-6 space-y-6">
+        <CardContent className="bg-white">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="userName" className="text-sm font-medium text-gray-700">Username</Label>
@@ -83,7 +87,7 @@ export default function LoginForm() {
             </Button>
           </form>
           
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-gray-500 mt-4">
             Contact your administrator for access
           </div>
         </CardContent>
