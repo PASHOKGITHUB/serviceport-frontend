@@ -1,27 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Edit, Trash2, Users, ChevronDown, Loader2 } from 'lucide-react';
-import { useStaff, useDeleteStaff } from '@/hooks/useStaff';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { Plus, Search, Users, ChevronDown, Loader2 } from 'lucide-react';
+import { useStaff, useDeleteStaff, useUpdateStaff } from '@/hooks/useStaff';
 import { useBranches } from '@/hooks/useBranches';
 import ConfirmationDialog from '@/components/Common/ConfirmationDialog';
+import { toast } from 'sonner';
 import type { Staff } from '@/domain/entities/staff';
 
 export default function StaffList() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [loadingStaffId, setLoadingStaffId] = useState<string | null>(null);
+  const [isAddingStaff, setIsAddingStaff] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [updatingToStatus, setUpdatingToStatus] = useState<'Active' | 'Inactive' | null>(null);
   
   const { data: staff = [], isLoading: staffLoading } = useStaff();
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
   const deleteStaffMutation = useDeleteStaff();
+  const updateStaffMutation = useUpdateStaff();
 
   // Create filter options dynamically from branches
   const filterOptions = ['All', ...branches.map(branch => branch.branchName)];
@@ -40,12 +50,47 @@ export default function StaffList() {
 
   const handleRowClick = (staffId: string) => {
     setLoadingStaffId(staffId);
+    router.push(`/staff/${staffId}`);
   };
 
-  const handleDeleteClick = (staffMember: Staff) => {
-    setStaffToDelete(staffMember);
-    setDeleteDialogOpen(true);
+  const handleAddStaff = () => {
+    setIsAddingStaff(true);
+    router.push('/staff/create');
   };
+
+const handleStatusUpdate = async (staffMember: Staff, newStatus: 'Active' | 'Inactive', event: React.MouseEvent) => {
+  // Prevent the row click event from triggering
+  event.stopPropagation();
+  
+  if (staffMember.action === newStatus) return;
+  
+  setUpdatingStatusId(staffMember._id);
+  setUpdatingToStatus(newStatus);
+  
+  try {
+    // Create update data with current staff info
+    const updateData = {
+      staffName: staffMember.staffName,
+      contactNumber: staffMember.contactNumber,
+      role: staffMember.role,
+      branch: typeof staffMember.branch === 'object' ? staffMember.branch._id : staffMember.branch,
+      address: staffMember.address || '',
+      action: newStatus
+    };
+
+    await updateStaffMutation.mutateAsync({
+      id: staffMember._id,
+      data: updateData
+    });
+    
+  } catch (error) {
+    console.error('Error updating staff status:', error);
+    toast.error('Failed to update staff status');
+  } finally {
+    setUpdatingStatusId(null);
+    setUpdatingToStatus(null);
+  }
+};
 
   const handleConfirmDelete = async () => {
     if (staffToDelete) {
@@ -78,19 +123,23 @@ export default function StaffList() {
             {filteredStaff.length} total staff members
           </p>
         </div>
-        <Link href="/staff/create">
-          <Button 
-            className="text-white w-full sm:w-auto font-medium"
-            style={{ backgroundColor: '#925D00' }}
-          >
+        <Button 
+          onClick={handleAddStaff}
+          disabled={isAddingStaff}
+          className="text-white w-full sm:w-auto font-medium"
+          style={{ backgroundColor: '#925D00' }}
+        >
+          {isAddingStaff ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
             <Plus className="h-4 w-4 mr-2" />
-            Add Staff
-          </Button>
-        </Link>
+          )}
+          Add Staff
+        </Button>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-6">
         {filterOptions.map((option) => {
           const staffCount = option === 'All' 
             ? staff.length 
@@ -100,34 +149,35 @@ export default function StaffList() {
             <button
               key={option}
               onClick={() => setActiveFilter(option)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`px-2 py-2 text-sm font-medium transition-all relative ${
                 activeFilter === option
-                  ? 'text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'text-[#C5AA7E]'
+                  : 'text-gray-600 hover:text-[#C5AA7E]'
               }`}
-              style={{
-                backgroundColor: activeFilter === option ? '#925D00' : 'transparent'
-              }}
             >
               {option}({staffCount})
+              {activeFilter === option && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5"
+                  style={{ backgroundColor: '#C5AA7E' }}
+                ></div>
+              )}
             </button>
           );
         })}
       </div>
 
       {/* Search Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <div className="flex items-center">
-          <div className="flex-1 lg:max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by name, contact, role..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-gray-300"
-              />
-            </div>
+      <div className="flex items-center">
+        <div className="flex-1 lg:max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search by name, contact, role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 border-gray-300"
+            />
           </div>
         </div>
       </div>
@@ -153,112 +203,161 @@ export default function StaffList() {
         {/* Table Body */}
         <div className="divide-y divide-gray-100">
           {filteredStaff.map((member) => (
-            <div key={member._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+            <div 
+              key={member._id} 
+              className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+              onClick={() => handleRowClick(member._id)}
+            >
               {/* Mobile Layout */}
               <div className="md:hidden space-y-3">
-                <Link href={`/staff/edit/${member._id}`} className="block" onClick={() => handleRowClick(member._id)}>
-                  <div className="flex justify-between items-start cursor-pointer">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-gray-900 break-words flex items-center gap-2">
-                        {member.staffName}
-                        {loadingStaffId === member._id && (
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500 break-all">{member.contactNumber}</div>
-                      <div className="text-sm text-gray-500 capitalize">{member.role}</div>
-                      {member.branch && (
-                        <div className="text-sm text-gray-500 break-words">{member.branch.branchName}</div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <div className="flex items-center gap-1 text-sm">
-                        <span 
-                          className={`px-2 py-1 rounded text-sm font-medium ${
-                            member.action === 'Active' ? 'text-black' : 'text-white'
-                          }`}
-                          style={{
-                            background: member.action === 'Active' 
-                              ? 'transparent' 
-                              : 'linear-gradient(180deg, #EC134A 0%, #65081F 97.55%)'
-                          }}
-                        >
-                          {member.action}
-                        </span>
-                        <ChevronDown className="h-3 w-3 text-gray-400" />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-                
-                <div className="flex gap-2">
-                  <Link href={`/staff/edit/${member._id}`} className="flex-1">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full border-gray-300 text-white"
-                      style={{ backgroundColor: '#925D00' }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 text-red-600 hover:text-red-700 border-gray-300"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteClick(member);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-
-              {/* Desktop Layout */}
-              <Link href={`/staff/edit/${member._id}`} onClick={() => handleRowClick(member._id)}>
-                <div 
-                  className="hidden md:grid items-center transition-colors cursor-pointer hover:bg-gray-100" 
-                  style={{gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", gap: "1rem"}}
-                >
-                  <div className="flex flex-col items-center justify-center text-center">
+                <div className="flex justify-between items-start">
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium text-gray-900 break-words flex items-center gap-2">
                       {member.staffName}
                       {loadingStaffId === member._id && (
                         <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                       )}
                     </div>
+                    <div className="text-sm text-gray-500 break-all">{member.contactNumber}</div>
+                    <div className="text-sm text-gray-500 capitalize">{member.role}</div>
+                    {member.branch && (
+                      <div className="text-sm text-gray-500 break-words">{member.branch.branchName}</div>
+                    )}
                   </div>
-                  <div className="text-gray-900 break-all flex justify-center items-center">{member.contactNumber}</div>
-                  <div className="flex justify-center items-center">
-                    <span className="text-gray-900">{member.role}</span>
-                  </div>
-                  <div className="flex justify-center items-center">
-                    <span className="text-gray-900">{member.branch?.branchName || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-center items-center">
-                    <div className="flex items-center gap-1">
-                      <span 
-                        className={`px-2 py-1 rounded text-sm font-medium ${
-                          member.action === 'Active' ? 'text-black' : 'text-white'
-                        }`}
-                        style={{
-                          background: member.action === 'Active' 
-                            ? 'transparent' 
-                            : 'linear-gradient(180deg, #EC134A 0%, #65081F 97.55%)'
-                        }}
+                  <div className="flex flex-col gap-2 items-end">
+                    <Popover>
+                    <PopoverTrigger asChild>
+                      <div 
+                        className="flex items-center gap-1 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {member.action}
-                      </span>
-                      <ChevronDown className="h-3 w-3 text-gray-400" />
-                    </div>
+                        <span className="px-2 py-1 rounded text-sm font-medium text-black">
+                          {member.action}
+                        </span>
+                        {updatingStatusId === member._id ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 text-gray-400" />
+                        )}
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-32 p-1 bg-white border border-gray-200 shadow-lg" align="center">
+                      <div className="flex flex-col">
+                        <button
+                          onClick={(e) => handleStatusUpdate(member, 'Active', e)}
+                          className={`px-3 py-2 text-sm text-left hover:bg-gray-100 rounded ${
+                            member.action === 'Active' ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                          disabled={updatingStatusId === member._id}
+                        >
+                          {updatingStatusId === member._id && updatingToStatus === 'Active' ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Active</span>
+                            </div>
+                          ) : (
+                            'Active'
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => handleStatusUpdate(member, 'Inactive', e)}
+                          className={`px-3 py-2 text-sm text-left hover:bg-gray-100 rounded ${
+                            member.action === 'Inactive' ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                          disabled={updatingStatusId === member._id}
+                        >
+                          {updatingStatusId === member._id && updatingToStatus === 'Inactive' ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Inactive</span>
+                            </div>
+                          ) : (
+                            'Inactive'
+                          )}
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   </div>
                 </div>
-              </Link>
+              </div>
+
+              {/* Desktop Layout */}
+              <div 
+                className="hidden md:grid items-center"
+                style={{gridTemplateColumns: "1.5fr 1fr 1fr 1fr 1fr", gap: "1rem"}}
+              >
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="font-medium text-gray-900 break-words flex items-center gap-2">
+                    {member.staffName}
+                    {loadingStaffId === member._id && (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                    )}
+                  </div>
+                </div>
+                <div className="text-gray-900 break-all flex justify-center items-center">{member.contactNumber}</div>
+                <div className="flex justify-center items-center">
+                  <span className="text-gray-900">{member.role}</span>
+                </div>
+                <div className="flex justify-center items-center">
+                  <span className="text-gray-900">{member.branch?.branchName || 'N/A'}</span>
+                </div>
+                <div className="flex justify-center items-center">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div 
+                        className="flex items-center gap-1 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="px-2 py-1 rounded text-sm font-medium text-black">
+                          {member.action}
+                        </span>
+                        {updatingStatusId === member._id ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3 text-gray-400" />
+                        )}
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-32 p-1 bg-white border border-gray-200 shadow-lg" align="center">
+                      <div className="flex flex-col">
+                        <button
+                          onClick={(e) => handleStatusUpdate(member, 'Active', e)}
+                          className={`px-3 py-2 text-sm text-left hover:bg-gray-100 rounded ${
+                            member.action === 'Active' ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                          disabled={updatingStatusId === member._id}
+                        >
+                          {updatingStatusId === member._id && updatingToStatus === 'Active' ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Active</span>
+                            </div>
+                          ) : (
+                            'Active'
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => handleStatusUpdate(member, 'Inactive', e)}
+                          className={`px-3 py-2 text-sm text-left hover:bg-gray-100 rounded ${
+                            member.action === 'Inactive' ? 'bg-gray-50 font-medium' : ''
+                          }`}
+                          disabled={updatingStatusId === member._id}
+                        >
+                          {updatingStatusId === member._id && updatingToStatus === 'Inactive' ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>Inactive</span>
+                            </div>
+                          ) : (
+                            'Inactive'
+                          )}
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -270,15 +369,19 @@ export default function StaffList() {
             <p className="text-gray-500 mb-4">
               {searchQuery ? 'No staff members match your search criteria.' : 'Get started by adding your first staff member.'}
             </p>
-            <Link href="/staff/create">
-              <Button 
-                className="text-white"
-                style={{ backgroundColor: '#925D00' }}
-              >
+            <Button 
+              onClick={handleAddStaff}
+              disabled={isAddingStaff}
+              className="text-white"
+              style={{ backgroundColor: '#925D00' }}
+            >
+              {isAddingStaff ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
                 <Plus className="h-4 w-4 mr-2" />
-                Add Staff Member
-              </Button>
-            </Link>
+              )}
+              Add Staff Member
+            </Button>
           </div>
         )}
       </div>

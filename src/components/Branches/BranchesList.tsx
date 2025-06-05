@@ -1,31 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, Building2, ChevronDown, Loader2 } from 'lucide-react';
+import { Plus, Building2, ChevronDown, Loader2 } from 'lucide-react';
 import { useBranches, useDeleteBranch } from '@/hooks/useBranches';
 import ConfirmationDialog from '@/components/Common/ConfirmationDialog';
 import type { Branch } from '@/domain/entities/branch';
 
 export default function BranchList() {
+  const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState<Branch | null>(null);
   const [loadingBranchId, setLoadingBranchId] = useState<string | null>(null);
+  const [isAddingBranch, setIsAddingBranch] = useState(false);
   
   const { data: branches = [], isLoading } = useBranches();
   const deleteBranchMutation = useDeleteBranch();
 
   const handleRowClick = (branchId: string) => {
     setLoadingBranchId(branchId);
+    router.push(`/branches/edit/${branchId}`);
   };
 
-  const handleDeleteClick = (branch: Branch) => {
-    setBranchToDelete(branch);
-    setDeleteDialogOpen(true);
+  const handleAddBranch = () => {
+    setIsAddingBranch(true);
+    router.push('/branches/create');
   };
+
+
 
   const handleConfirmDelete = async () => {
     if (branchToDelete) {
@@ -58,15 +62,19 @@ export default function BranchList() {
             {branches.length} total branches
           </p>
         </div>
-        <Link href="/branches/create">
-          <Button 
-            className="text-white w-full sm:w-auto font-medium"
-            style={{ backgroundColor: '#925D00' }}
-          >
+        <Button 
+          onClick={handleAddBranch}
+          disabled={isAddingBranch}
+          className="text-white w-full sm:w-auto font-medium"
+          style={{ backgroundColor: '#925D00' }}
+        >
+          {isAddingBranch ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
             <Plus className="h-4 w-4 mr-2" />
-            Add Branch
-          </Button>
-        </Link>
+          )}
+          Add Branch
+        </Button>
       </div>
 
       {/* Branch Table */}
@@ -81,97 +89,35 @@ export default function BranchList() {
           }}
         >
           <div className="text-center">Branch Name</div>
-          <div className="text-center">Location</div>
           <div className="text-center">Phone Number</div>
+          <div className="text-center">Location</div>
           <div className="text-center">Status</div>
         </div>
 
         {/* Table Body */}
         <div className="divide-y divide-gray-100">
           {branches.map((branch) => (
-            <div key={branch._id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+            <div 
+              key={branch._id} 
+              className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+              onClick={() => handleRowClick(branch._id)}
+            >
               {/* Mobile Layout */}
               <div className="md:hidden space-y-3">
-                <Link href={`/branches/edit/${branch._id}`} className="block" onClick={() => handleRowClick(branch._id)}>
-                  <div className="flex justify-between items-start cursor-pointer">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium text-gray-900 break-words flex items-center gap-2">
-                        {branch.branchName}
-                        {loadingBranchId === branch._id && (
-                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500 break-words">{branch.location}</div>
-                      <div className="text-sm text-gray-500 break-all">{branch.phoneNumber}</div>
-                      <div className="text-xs text-gray-400">ID: {branch._id.slice(-8)}</div>
-                    </div>
-                    <div className="flex flex-col gap-2 items-end">
-                      <div className="flex items-center gap-1 text-sm">
-                        <span 
-                          className={`px-2 py-1 rounded text-sm font-medium ${
-                            branch.status === 'Active' ? 'text-black' : 'text-white'
-                          }`}
-                          style={{
-                            background: branch.status === 'Active' 
-                              ? 'transparent' 
-                              : 'linear-gradient(180deg, #EC134A 0%, #65081F 97.55%)'
-                          }}
-                        >
-                          {branch.status}
-                        </span>
-                        <ChevronDown className="h-3 w-3 text-gray-400" />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-                
-                <div className="flex gap-2">
-                  <Link href={`/branches/edit/${branch._id}`} className="flex-1">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full border-gray-300 text-white"
-                      style={{ backgroundColor: '#925D00' }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex-1 text-red-600 hover:text-red-700 border-gray-300"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteClick(branch);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-
-              {/* Desktop Layout */}
-              <Link href={`/branches/edit/${branch._id}`} onClick={() => handleRowClick(branch._id)}>
-                <div 
-                  className="hidden md:grid items-center transition-colors cursor-pointer hover:bg-gray-100" 
-                  style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr", gap: "1rem"}}
-                >
-                  <div className="flex flex-col items-center justify-center text-center">
+                <div className="flex justify-between items-start">
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium text-gray-900 break-words flex items-center gap-2">
                       {branch.branchName}
                       {loadingBranchId === branch._id && (
                         <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                       )}
                     </div>
+                    <div className="text-sm text-gray-500 break-words">{branch.location}</div>
+                    <div className="text-sm text-gray-500 break-all">{branch.phoneNumber}</div>
                     <div className="text-xs text-gray-400">ID: {branch._id.slice(-8)}</div>
                   </div>
-                  <div className="text-gray-900 break-words flex justify-center items-center text-center">{branch.location}</div>
-                  <div className="text-gray-900 break-all flex justify-center items-center">{branch.phoneNumber}</div>
-                  <div className="flex justify-center items-center">
-                    <div className="flex items-center gap-1">
+                  <div className="flex flex-col gap-2 items-end">
+                    <div className="flex items-center gap-1 text-sm">
                       <span 
                         className={`px-2 py-1 rounded text-sm font-medium ${
                           branch.status === 'Active' ? 'text-black' : 'text-white'
@@ -188,7 +134,42 @@ export default function BranchList() {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </div>
+
+              {/* Desktop Layout */}
+              <div 
+                className="hidden md:grid items-center"
+                style={{gridTemplateColumns: "1.5fr 1.5fr 1fr 1fr", gap: "1rem"}}
+              >
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className="font-medium text-gray-900 break-words flex items-center gap-2">
+                    {branch.branchName}
+                    {loadingBranchId === branch._id && (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-400">ID: {branch._id.slice(-8)}</div>
+                </div>
+                <div className="text-gray-900 break-all flex justify-center items-center">{branch.phoneNumber}</div>
+                <div className="text-gray-900 break-words flex justify-center items-center text-center">{branch.location}</div>
+                <div className="flex justify-center items-center">
+                  <div className="flex items-center gap-1">
+                    <span 
+                      className={`px-2 py-1 rounded text-sm font-medium ${
+                        branch.status === 'Active' ? 'text-black' : 'text-white'
+                      }`}
+                      style={{
+                        background: branch.status === 'Active' 
+                          ? 'transparent' 
+                          : 'linear-gradient(180deg, #EC134A 0%, #65081F 97.55%)'
+                      }}
+                    >
+                      {branch.status}
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-gray-400" />
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -200,15 +181,19 @@ export default function BranchList() {
             <p className="text-gray-500 mb-4">
               Get started by adding your first branch.
             </p>
-            <Link href="/branches/create">
-              <Button 
-                className="text-white"
-                style={{ backgroundColor: '#925D00' }}
-              >
+            <Button 
+              onClick={handleAddBranch}
+              disabled={isAddingBranch}
+              className="text-white"
+              style={{ backgroundColor: '#925D00' }}
+            >
+              {isAddingBranch ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
                 <Plus className="h-4 w-4 mr-2" />
-                Add Branch
-              </Button>
-            </Link>
+              )}
+              Add Branch
+            </Button>
           </div>
         )}
       </div>

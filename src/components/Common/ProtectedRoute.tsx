@@ -1,3 +1,4 @@
+// src/components/Common/ProtectedRoute.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,105 +10,161 @@ import type { User } from '@/domain/entities/auth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: User['role'][];
-  redirectTo?: string;
 }
 
 export default function ProtectedRoute({
   children,
   allowedRoles = ['admin', 'manager', 'staff'],
-  redirectTo = '/auth/login'
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, token, user, isInitialized, initializeAuth } = useAuthStore();
+  const { token, user, initializeAuth, logout } = useAuthStore();
   const { data: currentUser, isLoading, error } = useCurrentUser();
   const [isMounted, setIsMounted] = useState(false);
+  const [isValidating, setIsValidating] = useState(true);
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-  // Prevent hydration mismatch by ensuring component only renders after mount
+  console.log('🛡️ ProtectedRoute render:', {
+    token: !!token,
+    user: !!user,
+    currentUser: !!currentUser,
+    isLoading,
+    error: !!error,
+    isMounted,
+    hasRedirected
+  });
+
+  // Initialize on mount
   useEffect(() => {
     setIsMounted(true);
-    // Initialize auth after component mounts
     initializeAuth();
   }, [initializeAuth]);
 
-  console.log('ProtectedRoute - token:', !!token, 'isAuthenticated:', isAuthenticated, 'isInitialized:', isInitialized, 'isLoading:', isLoading, 'isMounted:', isMounted);
-
+  // Authentication check
   useEffect(() => {
-    // Don't do anything until component is mounted and auth store is initialized
-    if (!isMounted || !isInitialized) {
-      console.log('ProtectedRoute: Waiting for mount or auth initialization');
-      return;
-    }
+    if (!isMounted || hasRedirected) return;
 
-    // If no token, redirect to login
-    if (!token) {
-      console.log('ProtectedRoute: No token, redirecting to login');
-      router.push(redirectTo);
-      return;
-    }
+    const performAuthCheck = async () => {
+      console.log('🔍 Performing auth check...', { token: !!token, error: !!error });
 
-    // If there's an auth error, redirect to login
-    if (error) {
-      console.log('ProtectedRoute: Auth error, redirecting to login');
-      router.push(redirectTo);
-      return;
-    }
-
-    // Only check roles if we have completed loading and have user data
-    if (!isLoading && (currentUser || user)) {
-      const userToCheck = currentUser || user;
-      if (userToCheck && !allowedRoles.includes(userToCheck.role)) {
-        console.log('ProtectedRoute: Role not allowed, redirecting to dashboard');
-        router.push('/dashboard');
+      // If no token after initialization, redirect to login
+      if (!token) {
+        console.log('❌ No token found, redirecting to login');
+        setHasRedirected(true);
+        logout();
+        router.replace('/login');
         return;
       }
+
+      // If auth error (invalid token), redirect to login
+      if (error) {
+        console.log('❌ Auth error, redirecting to login');
+        setHasRedirected(true);
+        logout();
+        router.replace('/login');
+        return;
+      }
+
+      // If we have a token and no errors, validation is complete
+      setIsValidating(false);
+      console.log('✅ Auth validation complete');
+    };
+
+    // Small delay to allow auth store to initialize
+    const timeoutId = setTimeout(performAuthCheck, 100);
+    return () => clearTimeout(timeoutId);
+  }, [token, error, isMounted, logout, router, hasRedirected]);
+
+  // Role-based access control
+  useEffect(() => {
+    if (!isMounted || isValidating || isLoading || hasRedirected) return;
+
+    const userToCheck = currentUser || user;
+    
+    if (userToCheck && !allowedRoles.includes(userToCheck.role)) {
+      console.log('🚫 Insufficient permissions, redirecting to safe page');
+      setHasRedirected(true);
+      router.replace('/dashboard'); // Redirect to a safe page
+      return;
     }
-  }, [token, currentUser, user, allowedRoles, redirectTo, router, error, isLoading, isInitialized, isMounted]);
+  }, [currentUser, user, allowedRoles, router, isMounted, isValidating, isLoading, hasRedirected]);
 
-  // Show loading skeleton until component is mounted and auth is initialized
-  if (!isMounted || !isInitialized) {
-    console.log('ProtectedRoute: Not mounted or auth initializing');
+  // Security timeout
+  useEffect(() => {
+    if (!isMounted || hasRedirected) return;
+
+    const securityTimeout = setTimeout(() => {
+      if (isValidating || (isLoading && !currentUser && !user)) {
+        console.log('🚫 Security timeout, redirecting to login');
+        setHasRedirected(true);
+        logout();
+        router.replace('/login');
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(securityTimeout);
+  }, [isMounted, isValidating, isLoading, currentUser, user, logout, router, hasRedirected]);
+
+  // Prevent rendering during redirect
+  if (hasRedirected) {
+    return <LoadingSpinner message="Redirecting..." />;
+  }
+
+  // Loading states
+  if (!isMounted) {
+    return <LoadingSpinner message="Starting application..." />;
+  }
+
+  if (isValidating) {
+    return <LoadingSpinner message="Validating authentication..." />;
+  }
+
+  if (!token) {
+    return <LoadingSpinner message="No authentication found, redirecting..." />;
+  }
+
+  if (error) {
+    return <LoadingSpinner message="Authentication error, redirecting..." />;
+  }
+
+  if (isLoading && !currentUser && !user) {
+    return <LoadingSpinner message="Loading user data..." />;
+  }
+
+  // Role check
+  const userToCheck = currentUser || user;
+  if (userToCheck && !allowedRoles.includes(userToCheck.role)) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="text-red-600 text-xl mb-4">⚠️ Access Denied</div>
+          <p className="text-gray-600 mb-4">You don&apos;t have permission to access this page.</p>
+          <button 
+            onClick={() => {
+              setHasRedirected(true);
+              router.push('/dashboard');
+            }}
+            className="bg-amber-700 text-white px-4 py-2 rounded hover:bg-amber-800"
+          >
+            Go to Dashboard
+          </button>
         </div>
       </div>
     );
   }
 
-  // Show loading skeleton while checking auth or fetching user data
-  if (isLoading || (!currentUser && !user && token)) {
-    console.log('ProtectedRoute: Loading user data');
-    return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render if not authenticated
-  if (!isAuthenticated || !token) {
-    console.log('ProtectedRoute: Not authenticated');
-    return null;
-  }
-
-  // Don't render if we're still waiting for user data
-  if (!currentUser && !user) {
-    console.log('ProtectedRoute: Waiting for user data');
-    return (
-      <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading user data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('ProtectedRoute: Rendering children');
+  // All security checks passed
+  console.log('✅ ProtectedRoute: All checks passed, rendering children');
   return <>{children}</>;
+}
+
+// Secure loading component
+function LoadingSpinner({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-700 mx-auto mb-4"></div>
+        <p className="text-gray-600">{message}</p>
+      </div>
+    </div>
+  );
 }

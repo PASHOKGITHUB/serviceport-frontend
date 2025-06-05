@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,16 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, MessageCircle, Loader2, ChevronDown } from 'lucide-react';
+import { Search, MessageCircle, ChevronDown } from 'lucide-react';
 import { useCustomers, useSearchCustomers } from '@/hooks/useCustomers';
 import { useBranches } from '@/hooks/useBranches';
-import { formatDate } from '@/lib/utils';
 
 export default function CustomersList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [selectedBranch, setSelectedBranch] = useState('All Branches');
-  const [loadingCustomerId, setLoadingCustomerId] = useState<string | null>(null);
   
   const { data: customers = [], isLoading } = useCustomers();
   const { data: searchResults = [] } = useSearchCustomers(searchQuery);
@@ -65,10 +61,6 @@ export default function CustomersList() {
       customers: grouped[date]
     }));
   }, [filteredCustomers]);
-
-  const handleRowClick = (customerId: string) => {
-    setLoadingCustomerId(customerId);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -140,45 +132,53 @@ export default function CustomersList() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit overflow-x-auto">
+      {/* Filter Tabs - Updated to match staff list style */}
+      <div className="flex gap-6">
         {filterOptions.map((option) => {
+          // Fix count calculation - count from displayCustomers with branch filter applied
           const customerCount = option === 'All' 
-            ? filteredCustomers.length 
-            : filteredCustomers.filter(customer => customer.serviceId?.action === option).length;
+            ? displayCustomers.filter(customer => 
+                selectedBranch === 'All Branches' || customer.branchId?.branchName === selectedBranch
+              ).length
+            : displayCustomers.filter(customer => {
+                const matchesAction = customer.serviceId?.action === option;
+                const matchesBranch = selectedBranch === 'All Branches' || customer.branchId?.branchName === selectedBranch;
+                return matchesAction && matchesBranch;
+              }).length;
           
           return (
             <button
               key={option}
               onClick={() => setActiveFilter(option)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              className={`px-2 py-2 text-sm font-medium transition-all relative ${
                 activeFilter === option
-                  ? 'text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'text-[#C5AA7E]'
+                  : 'text-gray-600 hover:text-[#C5AA7E]'
               }`}
-              style={{
-                backgroundColor: activeFilter === option ? '#925D00' : 'transparent'
-              }}
             >
               {option}({customerCount})
+              {activeFilter === option && (
+                <div 
+                  className="absolute bottom-0 left-0 right-0 h-0.5"
+                  style={{ backgroundColor: '#C5AA7E' }}
+                ></div>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Search Section */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-        <div className="flex items-center">
-          <div className="flex-1 lg:max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search Service ID, Customer Name, Number"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 border-gray-300"
-              />
-            </div>
+      {/* Search Section - Removed white background */}
+      <div className="flex items-center">
+        <div className="flex-1 lg:max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search Service ID, Customer Name, Number"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 border-gray-300"
+            />
           </div>
         </div>
       </div>
@@ -221,77 +221,57 @@ export default function CustomersList() {
               <div className="divide-y divide-gray-100">
                 {dateCustomers.map((customer) => (
                   <div key={customer._id} className="hover:bg-gray-50 transition-colors">
-                    {/* Mobile Layout */}
+                    {/* Mobile Layout - Removed Link and onClick */}
                     <div className="md:hidden p-4 space-y-3">
-                      <Link 
-                        href={`/customers/edit/${customer._id}`} 
-                        className="block" 
-                        onClick={() => handleRowClick(customer._id)}
-                      >
-                        <div className="flex justify-between items-start cursor-pointer">
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium text-gray-900 break-words flex items-center gap-2">
-                              {customer.customerName}
-                              {loadingCustomerId === customer._id && (
-                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-500 break-all">{customer.phone}</div>
-                            <div className="text-sm text-gray-500 break-words">{customer.location}</div>
-                            <div className="text-sm text-gray-500 font-mono">{customer.serviceId?.serviceId}</div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-medium ${getStatusColor(customer.serviceId?.action)}`}>
-                              {customer.serviceId?.action}
-                            </span>
-                            <MessageCircle className="h-4 w-4 text-green-500" />
-                          </div>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-500 border border-gray-300 bg-gray-50 p-2 rounded">
-                          {customer.address}
-                        </div>
-                      </Link>
-                    </div>
-
-                    {/* Desktop Layout */}
-                    <Link 
-                      href={`/customers/edit/${customer._id}`} 
-                      onClick={() => handleRowClick(customer._id)}
-                    >
-                      <div 
-                        className="hidden md:grid items-center cursor-pointer hover:bg-gray-100 px-6 py-4" 
-                        style={{gridTemplateColumns: "1.5fr 1fr 1fr 1fr 2fr", gap: "1rem"}}
-                      >
-                        <div className="flex justify-center items-center">
-                          <div className="font-medium text-gray-900 break-words text-center flex items-center gap-2">
+                      <div className="flex justify-between items-start">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-gray-900 break-words">
                             {customer.customerName}
-                            {loadingCustomerId === customer._id && (
-                              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                            )}
                           </div>
+                          <div className="text-sm text-gray-500 break-all">{customer.phone}</div>
+                          <div className="text-sm text-gray-500 break-words">{customer.location}</div>
+                          <div className="text-sm text-gray-500 font-mono">{customer.serviceId?.serviceId}</div>
                         </div>
-                        <div className="text-gray-900 break-all flex justify-center items-center">
-                          {customer.phone}
-                        </div>
-                        <div className="text-gray-900 break-words flex justify-center items-center text-center">
-                          {customer.location}
-                        </div>
-                        <div className="flex justify-center items-center">
-                          <div className="text-center">
-                            <div className="font-mono text-sm text-gray-900">{customer.serviceId?.serviceId}</div>
-                            {/* <div className={`text-xs font-medium ${getStatusColor(customer.serviceId?.action)}`}>
-                              {customer.serviceId?.action}
-                            </div> */}
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-gray-500 text-sm break-words flex-1 pr-2 border border-gray-300 bg-gray-50 p-2 rounded">
-                            {customer.address}
-                          </div>
-                          <MessageCircle className="h-4 w-4 text-green-500 flex-shrink-0 ml-2" />
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${getStatusColor(customer.serviceId?.action)}`}>
+                            {customer.serviceId?.action}
+                          </span>
+                          <MessageCircle className="h-4 w-4 text-green-500" />
                         </div>
                       </div>
-                    </Link>
+                      <div className="mt-2 text-sm text-gray-500 border border-gray-300 bg-gray-50 p-2 rounded">
+                        {customer.address}
+                      </div>
+                    </div>
+
+                    {/* Desktop Layout - Removed Link and onClick */}
+                    <div 
+                      className="hidden md:grid items-center hover:bg-gray-100 px-6 py-4" 
+                      style={{gridTemplateColumns: "1.5fr 1fr 1fr 1fr 2fr", gap: "1rem"}}
+                    >
+                      <div className="flex justify-center items-center">
+                        <div className="font-medium text-gray-900 break-words text-center">
+                          {customer.customerName}
+                        </div>
+                      </div>
+                      <div className="text-gray-900 break-all flex justify-center items-center">
+                        {customer.phone}
+                      </div>
+                      <div className="text-gray-900 break-words flex justify-center items-center text-center">
+                        {customer.location}
+                      </div>
+                      <div className="flex justify-center items-center">
+                        <div className="text-center">
+                          <div className="font-mono text-sm text-gray-900">{customer.serviceId?.serviceId}</div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-500 text-sm break-words flex-1 pr-2 border border-gray-300 bg-gray-50 p-2 rounded">
+                          {customer.address}
+                        </div>
+                        <MessageCircle className="h-4 w-4 text-green-500 flex-shrink-0 ml-2" />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

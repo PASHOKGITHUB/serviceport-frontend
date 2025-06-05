@@ -1,36 +1,31 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import { 
   Package, 
-  DollarSign,
   Plus,
   Search,
   TrendingUp,
   ArrowUp,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
   IndianRupee,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useServices } from '@/hooks/useServices';
 import { useTechnicians } from '@/hooks/useStaff';
 import { useUpdateServiceAction, useAssignTechnician } from '@/hooks/useServices';
 import { getStatusColor} from '@/lib/utils';
 import type { Service, Staff } from '@/domain/entities/service';
+import { useRouter } from 'next/navigation';
 
-// Action hierarchy for validation
-const ACTION_HIERARCHY = [
+const ACTION_OPTIONS = [
   'Received',
   'Assigned to Technician',
   'Under Inspection',
@@ -43,10 +38,18 @@ const ACTION_HIERARCHY = [
   'Cancelled'
 ];
 
+interface DateGroupedServices {
+  date: string;
+  services: Service[];
+}
+
 export default function DashboardContent() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [timeFilter, setTimeFilter] = useState('Last Month');
-  const [servicesFilter, setServicesFilter] = useState('all');
+  const [loadingActions, setLoadingActions] = useState<Set<string>>(new Set());
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
+  const [newServiceLoading, setNewServiceLoading] = useState(false);
   
   const { data: servicesResponse, isLoading: servicesLoading } = useServices();
   const { data: techniciansResponse, isLoading: techLoading } = useTechnicians();
@@ -57,6 +60,50 @@ export default function DashboardContent() {
 
   const updateActionMutation = useUpdateServiceAction();
   const assignTechnicianMutation = useAssignTechnician();
+
+  const handleNewServiceClick = () => {
+    setNewServiceLoading(true);
+    router.push('/services/create');
+  };
+
+  const handleActionChange = async (e: React.MouseEvent, serviceId: string, newAction: string) => {
+    e.stopPropagation();
+    try {
+      setLoadingActions(prev => new Set(prev).add(serviceId));
+      await updateActionMutation.mutateAsync({ id: serviceId, action: newAction });
+      
+      // Close the dropdown after successful update
+      setOpenDropdowns(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`action-${serviceId}`);
+        return newSet;
+      });
+    } catch (err) {
+      console.error('Error updating service action:', err);
+    } finally {
+      setLoadingActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(serviceId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleTechnicianChange = async (e: React.MouseEvent, serviceId: string, technicianId: string) => {
+    e.stopPropagation();
+    try {
+      await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
+      
+      // Close the dropdown after successful update
+      setOpenDropdowns(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`technician-${serviceId}`);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error assigning technician:', error);
+    }
+  };
 
   // Filter services based on time filter
   const getFilteredServicesByTime = (timeFilter: string) => {
@@ -158,16 +205,27 @@ export default function DashboardContent() {
     );
   }).slice(0, 10); // Show only first 10 services
 
-  // Get current date formatted
-  const getCurrentDate = () => {
-    const now = new Date();
-    const options: Intl.DateTimeFormatOptions = { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    };
-    return now.toLocaleDateString('en-GB', options);
-  };
+  // Group services by date
+  const servicesByDate: DateGroupedServices[] = useMemo(() => {
+    const grouped = filteredServices.reduce((acc: Record<string, Service[]>, service: Service) => {
+      const date = new Date(service.createdAt).toDateString();
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(service);
+      return acc;
+    }, {});
+
+    // Sort dates in descending order (newest first)
+    const sortedDates = Object.keys(grouped).sort((a, b) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+
+    return sortedDates.map(date => ({
+      date,
+      services: grouped[date]
+    }));
+  }, [filteredServices]);
 
   if (servicesLoading || techLoading) {
     return <DashboardSkeleton />;
@@ -181,11 +239,22 @@ export default function DashboardContent() {
           <h1 className="text-2xl sm:text-3xl font-bold text-black">Dashboard</h1>
         </div>
         <Button 
+          onClick={handleNewServiceClick}
+          disabled={newServiceLoading}
           className="text-white w-full sm:w-auto font-medium"
           style={{ backgroundColor: '#925D00' }}
         >
-          <Plus className="h-4 w-4 mr-2" />
-          New Service
+          {newServiceLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Loading...
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-2" />
+              New Service
+            </>
+          )}
         </Button>
       </div>
 
@@ -291,11 +360,11 @@ export default function DashboardContent() {
           <h3 className="text-lg font-semibold text-black">Service</h3>
         </div>
 
-        {/* Desktop Table Header - Removed Action column */}
+        {/* Desktop Table Header */}
         <div 
           className="hidden md:grid text-white px-6 py-4 text-sm font-medium" 
           style={{
-            gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr", 
+            gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1fr", 
             gap: "1rem",
             backgroundColor: '#C5AA7E'
           }}
@@ -305,13 +374,8 @@ export default function DashboardContent() {
           <div className="text-center">Phone</div>
           <div className="text-center">Product Name</div>
           <div className="text-center">Technician</div>
-        </div>
-
-        {/* Date Header */}
-        <div className="bg-gray-100 px-6 py-3 border-b border-gray-200">
-          <span className="text-sm font-medium text-gray-700">
-            {getCurrentDate()}
-          </span>
+          <div className="text-center">Action</div>
+          <div className="text-center">Amount</div>
         </div>
 
         {/* Table Body */}
@@ -320,95 +384,213 @@ export default function DashboardContent() {
             <div className="px-6 py-12 text-center">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <div className="text-gray-500 mb-4 font-medium">No services found</div>
-              <Link href="/services/create">
-                <Button 
-                  className="text-white font-medium"
-                  style={{ backgroundColor: '#925D00' }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Service
-                </Button>
-              </Link>
+              <Button 
+                onClick={handleNewServiceClick}
+                disabled={newServiceLoading}
+                className="text-white font-medium"
+                style={{ backgroundColor: '#925D00' }}
+              >
+                {newServiceLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Service
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
-            filteredServices.map((service) => (
-              <Link key={service._id} href={`/services/view/${service._id}`}>
-                <div className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer">
-                  {/* Mobile Layout */}
-                  <div className="md:hidden space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium text-gray-900 break-words font-mono text-sm">
+            servicesByDate.map(({ date, services: dateServices }: DateGroupedServices) => (
+              <div key={date}>
+                {/* Date Header */}
+                <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {new Date(date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </h3>
+                </div>
+
+                {/* Services for this date */}
+                {dateServices.map((service: Service) => (
+                  <Link key={service._id} href={`/services/view/${service._id}`}>
+                    <div className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer">
+                      {/* Mobile Layout */}
+                      <div className="md:hidden space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-gray-900 break-words font-mono text-sm">
+                              {service.serviceId}
+                            </div>
+                            <div className="text-sm text-gray-900 break-words font-medium">{service.customerName}</div>
+                            <div className="text-sm text-gray-500 break-all font-medium">{service.customerContactNumber}</div>
+                            <div className="text-sm text-gray-500 break-words font-medium">{service.location}</div>
+                          </div>
+                          <div className="flex flex-col gap-2 items-end">
+                            <Badge className={getStatusColor(service.action)} variant="outline">
+                              {service.action}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">Product: </span>
+                            <span className="text-sm text-gray-900 break-words font-medium">
+                              {service.productDetails[0]?.productName || 'N/A'}
+                            </span>
+                            {service.productDetails[0]?.brand && (
+                              <span className="text-sm text-gray-500 font-medium"> - {service.productDetails[0].brand}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">Technician: </span>
+                            <span className="text-sm text-gray-900 break-words font-medium">
+                              {service.technician?.staffName || 'Unassigned'}
+                            </span>
+                          </div>
+                          {service.serviceCost && (
+                            <div>
+                              <span className="text-sm font-medium text-gray-500">Cost: </span>
+                              <span className="text-sm text-green-600 font-medium">
+                                ₹{service.serviceCost}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div 
+                        className="hidden md:grid items-center" 
+                        style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr 1fr 1fr", gap: "1rem"}}
+                      >
+                        <div className="font-medium text-gray-900 break-all font-mono text-sm flex justify-center">
                           {service.serviceId}
                         </div>
-                        <div className="text-sm text-gray-900 break-words font-medium">{service.customerName}</div>
-                        <div className="text-sm text-gray-500 break-all font-medium">{service.customerContactNumber}</div>
-                        <div className="text-sm text-gray-500 break-words font-medium">{service.location}</div>
-                      </div>
-                      <div className="flex flex-col gap-2 items-end">
-                        <Badge className={getStatusColor(service.action)} variant="outline">
-                          {service.action}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Product: </span>
-                        <span className="text-sm text-gray-900 break-words font-medium">
-                          {service.productDetails[0]?.productName || 'N/A'}
-                        </span>
-                        {service.productDetails[0]?.brand && (
-                          <span className="text-sm text-gray-500 font-medium"> - {service.productDetails[0].brand}</span>
-                        )}
-                      </div>
-                      {service.serviceCost && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">Cost: </span>
-                          <span className="text-sm text-green-600 font-medium">
-                            ₹{service.serviceCost}
-                          </span>
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <div className="font-medium text-gray-900 break-words">{service.customerName}</div>
+                          <div className="text-xs text-gray-500 break-words font-medium">{service.location}</div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout - Removed Action column */}
-                  <div 
-                    className="hidden md:grid items-center" 
-                    style={{gridTemplateColumns: "1fr 1.2fr 1fr 1.2fr 1fr", gap: "1rem"}}
-                  >
-                    <div className="font-medium text-gray-900 break-all font-mono text-sm flex justify-center">
-                      {service.serviceId}
-                    </div>
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div className="font-medium text-gray-900 break-words">{service.customerName}</div>
-                      <div className="text-xs text-gray-500 break-words font-medium">{service.location}</div>
-                    </div>
-                    <div className="text-gray-900 break-all flex justify-center items-center text-sm font-medium">
-                      {service.customerContactNumber}
-                    </div>
-                    <div className="flex flex-col items-center justify-center text-center">
-                      <div className="font-medium text-gray-900 break-words text-sm">
-                        {service.productDetails[0]?.productName || 'N/A'}
-                      </div>
-                      <div className="text-xs text-gray-500 break-words font-medium">
-                        {service.productDetails[0]?.brand || ''}
-                      </div>
-                      {service.serviceCost && (
-                        <div className="text-xs text-green-600 font-medium mt-1">
-                          ₹{service.serviceCost}
+                        <div className="text-gray-900 break-all flex justify-center items-center text-sm font-medium">
+                          {service.customerContactNumber}
                         </div>
-                      )}
+                        <div className="flex flex-col items-center justify-center text-center">
+                          <div className="font-medium text-gray-900 break-words text-sm">
+                            {service.productDetails[0]?.productName || 'N/A'}
+                          </div>
+                          <div className="text-xs text-gray-500 break-words font-medium">
+                            {service.productDetails[0]?.brand || ''}
+                          </div>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <DropdownMenu 
+                            open={openDropdowns.has(`technician-${service._id}`)}
+                            onOpenChange={(isOpen) => {
+                              setOpenDropdowns(prev => {
+                                const newSet = new Set(prev);
+                                if (isOpen) {
+                                  newSet.add(`technician-${service._id}`);
+                                } else {
+                                  newSet.delete(`technician-${service._id}`);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                className="w-full px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center justify-between font-medium"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="truncate">
+                                  {service.technician?.staffName || 'Assign Technician'}
+                                </span>
+                                <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white w-48">
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                                className="font-medium"
+                              >
+                                Unassigned
+                              </DropdownMenuItem>
+                              {technicians.map((tech: Staff) => (
+                                <DropdownMenuItem 
+                                  key={tech._id}
+                                  onClick={(e) => handleTechnicianChange(e, service._id, tech._id)}
+                                  className="font-medium"
+                                >
+                                  {tech.staffName}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <DropdownMenu 
+                            open={openDropdowns.has(`action-${service._id}`)}
+                            onOpenChange={(isOpen) => {
+                              setOpenDropdowns(prev => {
+                                const newSet = new Set(prev);
+                                if (isOpen) {
+                                  newSet.add(`action-${service._id}`);
+                                } else {
+                                  newSet.delete(`action-${service._id}`);
+                                }
+                                return newSet;
+                              });
+                            }}
+                          >
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                className="w-full px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center justify-between max-w-32 font-medium"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="truncate text-left">
+                                  {service.action.length > 12 ? `${service.action.substring(0, 12)}...` : service.action}
+                                </span>
+                                {loadingActions.has(service._id) ? (
+                                  <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                                ) : (
+                                  <ChevronDown className="h-3 w-3 flex-shrink-0" />
+                                )}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-white w-52">
+                              {ACTION_OPTIONS.map((action: string) => (
+                                <DropdownMenuItem 
+                                  key={action}
+                                  onClick={(e) => handleActionChange(e, service._id, action)}
+                                  className={service.action === action ? 'bg-gray-100 font-medium' : 'font-medium'}
+                                >
+                                  {action}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="flex justify-center items-center">
+                          <div className="px-3 py-1 text-xs border border-gray-300 rounded flex items-center gap-1 font-medium">
+                            <IndianRupee className="h-3 w-3" />
+                            {service.serviceCost ? `${service.serviceCost}` : 'Amount'}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-center items-center">
-                      <span className="text-sm font-medium text-gray-700">
-                        {service.technician?.staffName || 'Unassigned'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+                  </Link>
+                ))}
+              </div>
             ))
           )}
         </div>

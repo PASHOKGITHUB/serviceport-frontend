@@ -2,44 +2,34 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ChevronRight, 
-  Edit, 
-  DollarSign, 
-  User, 
-  Phone, 
-  MapPin, 
-  Calendar,
-  Package,
-  FileText,
-  Settings
+  Edit,
+  Loader2,
 } from 'lucide-react';
-import { useService, useUpdateServiceAction, useAssignTechnician, useUpdateServiceCost } from '@/hooks/useServices';
-import { useTechnicians } from '@/hooks/useStaff';
-import { getStatusColor, formatDate } from '@/lib/utils';
-import type { Staff, ProductDetails, User as UserType } from '@/domain/entities/service';
+import { useService } from '@/hooks/useServices';
+import type { ProductDetails } from '@/domain/entities/service';
 
 // Status hierarchy for validation
-const STATUS_HIERARCHY = [
-  'Received',
-  'Assigned to Technician',
-  'Under Inspection',
-  'Waiting for Customer Approval',
-  'Approved',
-  'In Service',
-  'Finished',
-  'Delivered',
-  'Completed',
-  'Cancelled'
-];
+// const STATUS_HIERARCHY = [
+//   'Received',
+//   'Assigned to Technician',
+//   'Under Inspection',
+//   'Waiting for Customer Approval',
+//   'Approved',
+//   'In Service',
+//   'Finished',
+//   'Delivered',
+//   'Completed',
+//   'Cancelled'
+// ];
 
 interface ServiceViewProps {
   serviceId?: string;
@@ -47,70 +37,81 @@ interface ServiceViewProps {
 
 export default function ServiceView({ serviceId: propServiceId }: ServiceViewProps) {
   const params = useParams();
+  const router = useRouter();
   const serviceId = propServiceId || (params.id as string);
   
-  const [costDialogOpen, setCostDialogOpen] = useState(false);
-  const [newCost, setNewCost] = useState('');
+  // const [costDialogOpen, setCostDialogOpen] = useState(false);
+  // const [newCost, setNewCost] = useState('');
+  const [isEditLoading, setIsEditLoading] = useState(false);
   
   const { data: service, isLoading } = useService(serviceId);
-  const { data: techniciansResponse } = useTechnicians();
   
-  const technicians = techniciansResponse || [];
+  // const technicians = techniciansResponse || [];
   
-  const updateActionMutation = useUpdateServiceAction();
-  const assignTechnicianMutation = useAssignTechnician();
-  const updateCostMutation = useUpdateServiceCost();
+  // const updateActionMutation = useUpdateServiceAction();
+  // const assignTechnicianMutation = useAssignTechnician();
+  // const updateCostMutation = useUpdateServiceCost();
 
   // Get valid next statuses based on current status
-  const getValidNextStatuses = (currentStatus: string) => {
-    const currentIndex = STATUS_HIERARCHY.indexOf(currentStatus);
-    if (currentIndex === -1) return STATUS_HIERARCHY;
+  // const getValidNextStatuses = (currentStatus: string) => {
+  //   const currentIndex = STATUS_HIERARCHY.indexOf(currentStatus);
+  //   if (currentIndex === -1) return STATUS_HIERARCHY;
     
-    // Allow current status, next status, and cancelled
-    const validStatuses = [currentStatus];
-    if (currentIndex < STATUS_HIERARCHY.length - 2) {
-      validStatuses.push(STATUS_HIERARCHY[currentIndex + 1]);
-    }
-    if (currentStatus !== 'Cancelled') {
-      validStatuses.push('Cancelled');
-    }
-    return validStatuses;
-  };
+  //   // Allow current status, next status, and cancelled
+  //   const validStatuses = [currentStatus];
+  //   if (currentIndex < STATUS_HIERARCHY.length - 2) {
+  //     validStatuses.push(STATUS_HIERARCHY[currentIndex + 1]);
+  //   }
+  //   if (currentStatus !== 'Cancelled') {
+  //     validStatuses.push('Cancelled');
+  //   }
+  //   return validStatuses;
+  // };
 
-  const handleStatusChange = async (newStatus: string) => {
-    try {
-      await updateActionMutation.mutateAsync({ id: serviceId, action: newStatus });
-    } catch (err) {
-      console.error('Error updating service status:', err);
-    }
-  };
+  // const handleStatusChange = async (newStatus: string) => {
+  //   try {
+  //     await updateActionMutation.mutateAsync({ id: serviceId, action: newStatus });
+  //   } catch (err) {
+  //     console.error('Error updating service status:', err);
+  //   }
+  // };
 
-  const handleTechnicianChange = async (technicianId: string) => {
+  // const handleTechnicianChange = async (technicianId: string) => {
+  //   try {
+  //     await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
+  //   } catch (error) {
+  //     console.error('Error assigning technician:', error);
+  //   }
+  // };
+
+  // const handleCostUpdate = async () => {
+  //   if (newCost) {
+  //     try {
+  //       await updateCostMutation.mutateAsync({ 
+  //         id: serviceId, 
+  //         serviceCost: parseFloat(newCost) 
+  //       });
+  //       setCostDialogOpen(false);
+  //       setNewCost('');
+  //     } catch (error) {
+  //       console.error('Error updating service cost:', error);
+  //     }
+  //   }
+  // };
+
+  // const openCostDialog = () => {
+  //   setNewCost(service?.serviceCost?.toString() || '');
+  //   setCostDialogOpen(true);
+  // };
+
+  const handleEditClick = async () => {
+    setIsEditLoading(true);
     try {
-      await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
+      await router.push(`/services/edit/${service._id}`);
     } catch (error) {
-      console.error('Error assigning technician:', error);
+      console.error('Navigation error:', error);
+      setIsEditLoading(false);
     }
-  };
-
-  const handleCostUpdate = async () => {
-    if (newCost) {
-      try {
-        await updateCostMutation.mutateAsync({ 
-          id: serviceId, 
-          serviceCost: parseFloat(newCost) 
-        });
-        setCostDialogOpen(false);
-        setNewCost('');
-      } catch (error) {
-        console.error('Error updating service cost:', error);
-      }
-    }
-  };
-
-  const openCostDialog = () => {
-    setNewCost(service?.serviceCost?.toString() || '');
-    setCostDialogOpen(true);
   };
 
   if (isLoading) {
@@ -119,371 +120,278 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
 
   if (!service) {
     return (
-      <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="text-center py-12">
-          <div className="text-gray-500 mb-4">Service not found</div>
-          <Link href="/services">
-            <Button className="bg-amber-700 hover:bg-amber-800 text-white">Back to Services</Button>
-          </Link>
+      <div className="min-h-screen">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/services" className="text-gray-600 hover:text-gray-900 transition-colors">
+                Services
+              </Link>
+              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <span className="text-amber-700 font-medium">Service Details</span>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="text-center py-12">
+            <div className="text-gray-500 mb-4">Service not found</div>
+            <Link href="/services">
+              <Button className="bg-amber-700 hover:bg-amber-800 text-white">Back to Services</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto animate-fade-in">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
-        <Link href="/services" className="text-gray-600 hover:text-gray-900 transition-colors">
-          Services
-        </Link>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
-        <span className="text-amber-700 font-medium font-mono">{service.serviceId}</span>
+    <div className="min-h-screen">
+      {/* Header with buttons */}
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/services" className="text-gray-600 hover:text-gray-900 transition-colors">
+              Services
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <span className="text-amber-700 font-medium">{service.serviceId}</span>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleEditClick}
+              disabled={isEditLoading}
+              className="px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#925D00' }}
+            >
+              {isEditLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Edit className="h-4 w-4" />
+              )}
+              {isEditLoading ? 'Loading...' : 'Edit Service'}
+            </Button>
+            <Link href="/services">
+              <Button 
+                variant="outline" 
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2 rounded-lg font-medium"
+              >
+                Back to List
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-black">
-            Service Details
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base font-mono">
-            {service.serviceId}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Link href={`/services/edit/${service._id}`}>
-            <Button className="bg-amber-700 hover:bg-amber-800 text-white w-full sm:w-auto">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Service
-            </Button>
-          </Link>
-          <Link href="/services">
-            <Button variant="outline" className="w-full sm:w-auto border-gray-300">
-              Back to List
-            </Button>
-          </Link>
-        </div>
-      </div>
+      {/* Form content - Matching width to edit form */}
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="space-y-6">
+          {/* Service ID - Normal display with label */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-black">
+              Service ID
+            </Label>
+            <Input
+              value={service.serviceId}
+              readOnly
+              className="h-11 w-50 px-3 border border-gray-300 rounded-md text-gray-900 bg-gray-50 cursor-not-allowed"
+            />
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Customer Information */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="bg-gray-200 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <User className="h-5 w-5" />
-                Customer Information
-              </CardTitle>
+          {/* Customer Details Card */}
+          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
+            <CardHeader className="py-6 bg-[#EFEAE3] w-full">
+              <CardTitle className="text-lg text-center text-black font-medium">Customer Details</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4 bg-white">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Customer Name</Label>
-                  <p className="text-black font-medium">{service.customerName}</p>
+            <CardContent className="p-8 bg-transparent">
+              <div className="space-y-8">
+                {/* First Row - Customer Name and Contact Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-black">
+                      Customer Name
+                    </Label>
+                    <Input
+                      value={service.customerName || ''}
+                      readOnly
+                      className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-black">
+                      Contact Number
+                    </Label>
+                    <Input
+                      value={service.customerContactNumber || ''}
+                      readOnly
+                      className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Contact Number</Label>
-                  <p className="text-black flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    {service.customerContactNumber}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Location</Label>
-                  <p className="text-black flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {service.location}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Address</Label>
-                  <p className="text-black">{service.address}</p>
+
+                {/* Second Row - Location and Address */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-black">
+                      Location
+                    </Label>
+                    <Input
+                      value={service.location || ''}
+                      readOnly
+                      className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 bg-gray-50 cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-black">
+                      Address
+                    </Label>
+                    <Textarea
+                      value={service.address || ''}
+                      readOnly
+                      className="min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 bg-gray-50 cursor-not-allowed resize-none"
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Product Details */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="bg-gray-200 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <Package className="h-5 w-5" />
-                Product Details
-              </CardTitle>
+          {/* Product Details Card */}
+          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
+            <CardHeader className="py-6 bg-[#EFEAE3] w-full">
+              <CardTitle className="text-lg text-center text-black font-medium">Product Details</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 bg-white">
-              <div className="space-y-6">
+            <CardContent className="p-8 bg-transparent">
+              <div className="space-y-8">
                 {service.productDetails.map((product: ProductDetails, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h3 className="font-medium text-black mb-3">Product {index + 1}</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Product Name</Label>
-                        <p className="text-black">{product.productName}</p>
+                  <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-6 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium text-black text-lg">Product {index + 1}</h3>
+                    </div>
+                    
+                    {/* First Row - Product Name and Serial Number */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-black">
+                          Product Name
+                        </Label>
+                        <Input
+                          value={product.productName}
+                          readOnly
+                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
+                        />
                       </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Serial Number</Label>
-                        <p className="text-black font-mono">{product.serialNumber}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Brand</Label>
-                        <p className="text-black">{product.brand}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-600">Type</Label>
-                        <p className="text-black">{product.type}</p>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-black">
+                          Serial Number
+                        </Label>
+                        <Input
+                          value={product.serialNumber}
+                          readOnly
+                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
+                        />
                       </div>
                     </div>
-                    <div className="mt-4">
-                      <Label className="text-sm font-medium text-gray-600">Product Issue</Label>
-                      <p className="text-black mt-1">{product.productIssue}</p>
+
+                    {/* Second Row - Brand and Type */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-black">
+                          Brand
+                        </Label>
+                        <Input
+                          value={product.brand}
+                          readOnly
+                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium text-black">
+                          Type
+                        </Label>
+                        <Input
+                          value={product.type}
+                          readOnly
+                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Third Row - Product Issue (Full Width) */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-black">
+                        Product Issue
+                      </Label>
+                      <Textarea
+                        value={product.productIssue}
+                        readOnly
+                        className="min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed resize-none"
+                      />
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-
-          {/* Service Timeline */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="bg-gray-200 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <Calendar className="h-5 w-5" />
-                Service Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4 bg-white">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Received Date</Label>
-                  <p className="text-black">{formatDate(service.receivedDate || service.createdAt)}</p>
-                </div>
-                {service.deliveredDate && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-600">Delivered Date</Label>
-                    <p className="text-black">{formatDate(service.deliveredDate)}</p>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Created Date</Label>
-                  <p className="text-black">{formatDate(service.createdAt)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Last Updated</Label>
-                  <p className="text-black">{formatDate(service.updatedAt)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status & Actions */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="bg-gray-200 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <Settings className="h-5 w-5" />
-                Service Management
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4 bg-white">
-              {/* Current Status */}
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Current Status</Label>
-                <div className="mt-2">
-                  <Badge className={getStatusColor(service.action)}>
-                    {service.action}
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Update Status */}
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Update Status</Label>
-                <Select 
-                  value={service.action}
-                  onValueChange={handleStatusChange}
-                  disabled={updateActionMutation.isPending}
-                >
-                  <SelectTrigger className="mt-2 border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    {getValidNextStatuses(service.action).map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Assign Technician */}
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Assigned Technician</Label>
-                <Select 
-                  value={service.technician?._id || "unassigned"}
-                  onValueChange={(value) => {
-                    if (value !== "unassigned") {
-                      handleTechnicianChange(value);
-                    }
-                  }}
-                  disabled={assignTechnicianMutation.isPending}
-                >
-                  <SelectTrigger className="mt-2 border-gray-300">
-                    <SelectValue placeholder="Assign Technician" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-200">
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {technicians.map((tech: Staff) => (
-                      <SelectItem key={tech._id} value={tech._id}>
-                        {tech.staffName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {service.technician && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Currently: {service.technician.staffName}
-                  </p>
-                )}
-              </div>
-
-              {/* Service Cost */}
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Service Cost</Label>
-                <div className="mt-2 flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={openCostDialog}
-                    className="flex-1 border-gray-300"
-                  >
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    ₹{service.serviceCost || 'Not set'}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Service Information */}
-          <Card className="shadow-sm border-gray-200">
-            <CardHeader className="bg-gray-200 rounded-t-lg">
-              <CardTitle className="flex items-center gap-2 text-black">
-                <FileText className="h-5 w-5" />
-                Service Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4 bg-white">
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Service ID</Label>
-                <p className="text-black font-mono">{service.serviceId}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-600">Total Products</Label>
-                <p className="text-black">{service.productDetails.length}</p>
-              </div>
-              {service.createdBy && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Created By</Label>
-                  <p className="text-black">{(service.createdBy as UserType).name || 'System'}</p>
-                </div>
-              )}
-              {service.updatedBy && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-600">Last Updated By</Label>
-                  <p className="text-black">{(service.updatedBy as UserType).name || 'System'}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
-
-      {/* Cost Update Modal */}
-      {costDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4 text-black">Update Service Cost</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="cost" className="text-sm font-medium text-gray-700">Service Cost (₹)</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  value={newCost}
-                  onChange={(e) => setNewCost(e.target.value)}
-                  placeholder="Enter service cost"
-                  className="mt-2 border-gray-300"
-                />
-              </div>
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleCostUpdate}
-                  disabled={!newCost || updateCostMutation.isPending}
-                  className="flex-1 bg-amber-700 hover:bg-amber-800 text-white"
-                >
-                  {updateCostMutation.isPending ? 'Updating...' : 'Update Cost'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setCostDialogOpen(false)}
-                  className="flex-1 border-gray-300"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 function ServiceViewSkeleton() {
   return (
-    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-2 text-sm">
-        <Skeleton className="h-4 w-16" />
-        <Skeleton className="h-4 w-4" />
-        <Skeleton className="h-4 w-24" />
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-32" />
-        </div>
-        <div className="flex gap-3">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
+    <div className="min-h-screen">
+      {/* Header */}
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2 text-sm">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-32" />
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-gray-200">
-            <CardContent className="p-6">
-              <Skeleton className="h-32 w-full" />
-            </CardContent>
-          </Card>
-          <Card className="border-gray-200">
-            <CardContent className="p-6">
-              <Skeleton className="h-48 w-full" />
-            </CardContent>
-          </Card>
-        </div>
+      {/* Form content - Updated skeleton width */}
+      <div className="max-w-6xl mx-auto p-6">
         <div className="space-y-6">
+          {/* Service ID */}
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-11 w-full" />
+          </div>
+
+          {/* Form Cards */}
           <Card className="border-gray-200">
-            <CardContent className="p-6">
+            <CardHeader className="bg-[#EFEAE3]">
+              <Skeleton className="h-6 w-40 mx-auto" />
+            </CardHeader>
+            <CardContent className="p-8">
+              <Skeleton className="h-64 w-full" />
+            </CardContent>
+          </Card>
+          
+          <Card className="border-gray-200">
+            <CardHeader className="bg-[#EFEAE3]">
+              <Skeleton className="h-6 w-32 mx-auto" />
+            </CardHeader>
+            <CardContent className="p-8">
+              <Skeleton className="h-80 w-full" />
+            </CardContent>
+          </Card>
+
+          <Card className="border-gray-200">
+            <CardHeader className="bg-[#EFEAE3]">
+              <Skeleton className="h-6 w-40 mx-auto" />
+            </CardHeader>
+            <CardContent className="p-8">
               <Skeleton className="h-64 w-full" />
             </CardContent>
           </Card>

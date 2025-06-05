@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useCreateStaff } from '@/hooks/useStaff';
 import { useBranches } from '@/hooks/useBranches';
 import type { CreateStaffRequest, StaffRole } from '@/domain/entities/staff';
+import { ApiError } from '@/types/error';
 
 interface ValidationErrors {
   staffName?: string;
@@ -23,9 +24,79 @@ interface ValidationErrors {
   address?: string;
 }
 
+// Skeleton loading component for create staff form
+const CreateStaffSkeleton = () => {
+  return (
+    <div className="min-h-screen">
+      {/* Header skeleton */}
+      <div className="border-b border-gray-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* Breadcrumb skeleton */}
+          <div className="flex items-center gap-2 text-sm">
+            <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Action buttons skeleton */}
+          <div className="flex gap-3">
+            <div className="h-10 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="h-10 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form content skeleton */}
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="space-y-6">
+          {/* Staff Details Card skeleton */}
+          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
+            <CardHeader className="py-6 bg-[#EFEAE3] w-full">
+              <CardTitle className="text-lg text-center text-black font-medium">Staff Details</CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 bg-transparent">
+              <div className="space-y-8">
+                {/* First Row skeleton - Full Name and Contact Number */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-11 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-11 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Second Row skeleton - Select Role and Branch */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3 w-full">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-11 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                  </div>
+                  <div className="space-y-3 w-full">
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-11 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Third Row skeleton - Address */}
+                <div className="space-y-3">
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-32 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function CreateStaffForm() {
   const router = useRouter();
-  const { data: branches = [] } = useBranches();
+  const { data: branches = [], isLoading: branchesLoading } = useBranches();
   const createStaffMutation = useCreateStaff();
 
   const [formData, setFormData] = useState<CreateStaffRequest>({
@@ -91,12 +162,14 @@ export default function CreateStaffForm() {
       await createStaffMutation.mutateAsync(formData);
       toast.success('Staff member created successfully!');
       router.push('/staff');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error creating staff:', err);
+
+      const error = err as ApiError
       
       // Handle validation errors from API
-      if (err?.response?.data?.message) {
-        const errorMessage = err.response.data.message;
+      if (error?.response?.data?.message) {
+        const errorMessage = error.response.data.message;
         
         // Parse specific validation errors
         if (errorMessage.includes('Contact number must be at least 10 digits')) {
@@ -112,8 +185,13 @@ export default function CreateStaffForm() {
     }
   };
 
+  // Show skeleton while branches are loading
+  if (branchesLoading) {
+    return <CreateStaffSkeleton />;
+  }
+
   // Consistent styling classes for all form inputs
-  const inputClasses = "h-11 px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
+  const inputClasses = "h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
   const errorInputClasses = "border-red-500 focus:border-red-500 focus:ring-red-500";
 
   return (
@@ -156,9 +234,9 @@ export default function CreateStaffForm() {
       {/* Form content */}
       <div className="max-w-4xl mx-auto p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Staff Details Card */}
-          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent">
-            <CardHeader className="py-8" style={{ backgroundColor: '#EFEAE3' }}>
+          {/* Staff Details Card */} 
+         <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
+            <CardHeader className="py-6 bg-[#EFEAE3] w-full">
               <CardTitle className="text-lg text-center text-black font-medium">Staff Details</CardTitle>
             </CardHeader>
             <CardContent className="p-8 bg-transparent">
@@ -221,30 +299,35 @@ export default function CreateStaffForm() {
 
                 {/* Second Row - Select Role and Branch */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
+                  <div className="space-y-3 w-full">
                     <Label htmlFor="selectRole" className="text-sm font-medium text-black">
                       Select Role
                     </Label>
-                    <Select 
-                      value={formData.role} 
-                      onValueChange={(value: StaffRole) => {
-                        setFormData({ ...formData, role: value });
-                        if (validationErrors.role) {
-                          setValidationErrors({ ...validationErrors, role: undefined });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`${inputClasses} ${
-                        validationErrors.role ? errorInputClasses : ''
-                      }`}>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-200">
-                        <SelectItem value="Technician">Technician</SelectItem>
-                        <SelectItem value="Staff">Staff</SelectItem>
-                        <SelectItem value="Manager">Manager</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="w-full">
+                      <Select 
+                        value={formData.role} 
+                        onValueChange={(value: StaffRole) => {
+                          setFormData({ ...formData, role: value });
+                          if (validationErrors.role) {
+                            setValidationErrors({ ...validationErrors, role: undefined });
+                          }
+                        }}
+                      >
+                        <SelectTrigger 
+                          id="selectRole"
+                          className={`${inputClasses} ${
+                            validationErrors.role ? errorInputClasses : ''
+                          }`}
+                        >
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-200">
+                          <SelectItem value="Technician">Technician</SelectItem>
+                          <SelectItem value="Staff">Staff</SelectItem>
+                          <SelectItem value="Manager">Manager</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     {validationErrors.role && (
                       <div className="flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle className="h-4 w-4" />
@@ -252,35 +335,40 @@ export default function CreateStaffForm() {
                       </div>
                     )}
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3 w-full">
                     <Label htmlFor="branch" className="text-sm font-medium text-black">
                       Branch
                     </Label>
-                    <Select 
-                      value={formData.branch} 
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, branch: value });
-                        if (validationErrors.branch) {
-                          setValidationErrors({ ...validationErrors, branch: undefined });
-                        }
-                      }}
-                    >
-                      <SelectTrigger className={`${inputClasses} ${
-                        validationErrors.branch ? errorInputClasses : ''
-                      }`}>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border-gray-200">
-                        {branches.map((branch) => (
-                          <SelectItem key={branch._id} value={branch._id}>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-black">{branch.branchName}</span>
-                              <span className="text-sm text-gray-500">{branch.location}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="w-full">
+                      <Select 
+                        value={formData.branch} 
+                        onValueChange={(value) => {
+                          setFormData({ ...formData, branch: value });
+                          if (validationErrors.branch) {
+                            setValidationErrors({ ...validationErrors, branch: undefined });
+                          }
+                        }}
+                      >
+                        <SelectTrigger 
+                          id="branch"
+                          className={`${inputClasses} ${
+                            validationErrors.branch ? errorInputClasses : ''
+                          }`}
+                        >
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-200">
+                          {branches.map((branch) => (
+                            <SelectItem key={branch._id} value={branch._id}>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-black">{branch.branchName}</span>
+                                <span className="text-sm text-gray-500">{branch.location}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     {validationErrors.branch && (
                       <div className="flex items-center gap-2 text-red-600 text-sm">
                         <AlertCircle className="h-4 w-4" />
@@ -305,7 +393,7 @@ export default function CreateStaffForm() {
                       }
                     }}
                     placeholder="ABC HOUSE BCD TOWN EFG POST HIJ COLONY,ABC HOUSE BCD TOWN EFG POST HIJ COLONY"
-                    className={`min-h-[120px] px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
+                    className={`min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ${
                       validationErrors.address ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
                     }`}
                     required

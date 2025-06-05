@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Menu } from 'lucide-react';
+import Image from 'next/image';
 
 interface HeaderProps {
   title?: string;
@@ -36,11 +37,13 @@ export default function Header({ title }: HeaderProps) {
       <div className="flex items-center justify-between h-full px-4 sm:px-6">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           {/* Logo - visible on desktop */}
-          <div className="hidden lg:flex items-center gap-2 mr-8">
-            <img 
+          <div className="hidden lg:flex items-center mr-8">
+            <Image 
               src="/logo.svg" 
               alt="CAMERA PORT" 
-              className="h-18 w-50"
+              width={200}
+              height={50}
+              // className="h-18 w-50"
             />
           </div>
 
@@ -65,7 +68,7 @@ export default function Header({ title }: HeaderProps) {
               {user?.userName || 'Daniel Roberts'}
             </div>
             <div className="text-xs text-gray-500">
-              Receptionist
+              {user?.role || 'user'}
             </div>
           </div>
           <DropdownMenu>

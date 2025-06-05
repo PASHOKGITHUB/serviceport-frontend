@@ -34,6 +34,7 @@
 import { BaseEntity } from './common';
 
 export interface Staff extends BaseEntity {
+  address: string;
   staffName: string;
   contactNumber: string;
   role: StaffRole;

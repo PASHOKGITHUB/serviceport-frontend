@@ -14,6 +14,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import Image from 'next/image';
 
 const sidebarItems = [
   {
@@ -76,10 +77,12 @@ export default function Sidebar() {
         {/* Logo section - only visible on mobile */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <img 
+            <Image 
               src="/logo.svg" 
               alt="Rent O Rent Logo" 
-              className="h-8 w-auto"
+              width={32}
+              height={32}
+              // className="h-8 w-auto"
             />
           </div>
           <Button
