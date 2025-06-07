@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useCreateBranch } from '@/hooks/useBranches';
 import { SkeletonForm } from '@/components/ui/skeleton-form';
 import type { CreateBranchRequest } from '@/domain/entities/branch';
-import { ApiError } from '@/types/error';
+// import { ApiError } from '@/types/error';
 
 interface ValidationErrors {
   branchName?: string;
@@ -61,42 +61,37 @@ export default function CreateBranchForm() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  setValidationErrors({});
+  if (!validateForm()) {
+    toast.error('Validation Error', {
+      description: 'Please fix the errors below and try again.',
+    });
+    return;
+  }
+  
+  try {
+    await createBranchMutation.mutateAsync(formData);
+    toast.success('Branch created successfully!');
+    router.push('/branches');
+  } catch (err) {
+    console.error('Error creating branch:', err);
+    const error = err as Error;
     
-    setValidationErrors({});
-
-    if (!validateForm()) {
-      toast.error('Validation Error', {
-        description: 'Please fix the errors below and try again.',
-      });
-      return;
+    // Handle specific validation errors for form fields
+    if (error.message.includes('Contact number must be at least 10 digits')) {
+      setValidationErrors({ phoneNumber: 'Contact number must be at least 10 digits' });
     }
     
-    try {
-      await createBranchMutation.mutateAsync(formData);
-      toast.success('Branch created successfully!');
-      router.push('/branches');
-    } catch (err) {
-      console.error('Error creating branch:', err);
+    // Show the backend error message
+    toast.error('Error', {
+      description: error.message,
+    });
+  }
+};
 
-      const error = err as ApiError;
-
-      if (error?.response?.data?.message) {
-        const errorMessage = error.response.data.message;
-        
-        if (errorMessage.includes('Contact number must be at least 10 digits')) {
-          setValidationErrors({ phoneNumber: 'Contact number must be at least 10 digits' });
-        }
-        
-        toast.error('Error', {
-          description: errorMessage,
-        });
-      } else {
-        toast.error('Failed to create branch. Please try again.');
-      }
-    }
-  };
 
   const inputClasses = "h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500";
   const errorInputClasses = "border-red-500 focus:border-red-500 focus:ring-red-500";

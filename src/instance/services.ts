@@ -52,10 +52,10 @@ export const updateService = async (id: string, data: UpdateServiceRequest) => {
 };
 
 // Update service action/status
-export const updateServiceAction = async (id: string, data: { action: string }) => {
-  const response = await ApiClient.patch(`/services/${id}/action`, data);
-  return response.data;
-};
+export const updateServiceAction = async (id: string, data: { action: string; cancellationReason?: string }) => {
+  const response = await ApiClient.patch(`/services/${id}/action`, data)
+  return response.data
+}
 
 // Assign technician to service
 export const assignTechnician = async (id: string, data: { technicianId: string }) => {

@@ -17,13 +17,14 @@ import {
   Search, 
   IndianRupee, 
   ChevronDown,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useServices } from '@/hooks/useServices';
 import { useBranches } from '@/hooks/useBranches';
 import { useUpdateServiceCost, useUpdateServiceAction, useAssignTechnician } from '@/hooks/useServices';
 import { useTechnicians } from '@/hooks/useStaff';
-
 
 // Types
 interface Service {
@@ -42,6 +43,12 @@ interface Service {
     productIssue: string;
     _id: string;
   }>;
+  branchId: {
+    _id: string;
+    branchName: string;
+    location: string;
+    address: string;
+  };
   createdAt: string;
   updatedAt: string;
   serviceCost?: number;
@@ -85,6 +92,8 @@ export default function ServicesList() {
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
   const [newServiceLoading, setNewServiceLoading] = useState(false);
   const [loadingServiceId, setLoadingServiceId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const servicesPerPage = 10;
   
   const { data: servicesResponse, isLoading } = useServices();
   const { data: branches = [], isLoading: branchesLoading } = useBranches();
@@ -103,12 +112,32 @@ export default function ServicesList() {
     [techniciansResponse]
   );
 
-  const displayServices = searchQuery ? 
-    allServices.filter((service: Service) => 
-      service.serviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      service.customerContactNumber.includes(searchQuery)
-    ) : allServices;
+  const displayServices = useMemo(() => {
+    let filtered = allServices;
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter((service: Service) => 
+        service.serviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        service.customerContactNumber.includes(searchQuery)
+      );
+    }
+    
+    // Apply action filter
+    if (activeFilter !== 'All') {
+      filtered = filtered.filter(service => service.action === activeFilter);
+    }
+    
+    // Apply branch filter
+    if (selectedBranch !== 'All Branches') {
+      filtered = filtered.filter(service => 
+        service.branchId?.branchName === selectedBranch
+      );
+    }
+    
+    return filtered;
+  }, [allServices, searchQuery, activeFilter, selectedBranch]);
 
   // Get unique actions for filter tabs
   const filterOptions = useMemo(() => {
@@ -116,18 +145,17 @@ export default function ServicesList() {
     return ['All', ...actions];
   }, [allServices]);
 
-  // Filter services by active filter and selected branch
-  const filteredServices = useMemo(() => {
-    return displayServices.filter((service: Service) => {
-      const matchesAction = activeFilter === 'All' || service.action === activeFilter;
-      const matchesBranch = selectedBranch === 'All Branches';
-      return matchesAction && matchesBranch;
-    });
-  }, [displayServices, activeFilter, selectedBranch]);
+  // Pagination logic
+  const totalPages = Math.ceil(displayServices.length / servicesPerPage);
+  const currentServices = useMemo(() => {
+    const startIndex = (currentPage - 1) * servicesPerPage;
+    const endIndex = startIndex + servicesPerPage;
+    return displayServices.slice(startIndex, endIndex);
+  }, [displayServices, currentPage, servicesPerPage]);
 
   // Group services by date
   const servicesByDate = useMemo(() => {
-    const grouped = filteredServices.reduce((acc: Record<string, Service[]>, service: Service) => {
+    const grouped = currentServices.reduce((acc: Record<string, Service[]>, service: Service) => {
       const date = new Date(service.createdAt).toDateString();
       if (!acc[date]) {
         acc[date] = [];
@@ -145,12 +173,10 @@ export default function ServicesList() {
       date,
       services: grouped[date]
     }));
-  }, [filteredServices]);
+  }, [currentServices]);
 
   const handleNewServiceClick = () => {
     setNewServiceLoading(true);
-
-    // Simulate loading for 2 seconds before navigation
     setTimeout(() => {
       setNewServiceLoading(false);
       router.push('/services/create');
@@ -168,7 +194,6 @@ export default function ServicesList() {
       setLoadingActions(prev => new Set(prev).add(serviceId));
       await updateActionMutation.mutateAsync({ id: serviceId, action: newAction });
       
-      // Close the dropdown after successful update
       setOpenDropdowns(prev => {
         const newSet = new Set(prev);
         newSet.delete(`action-${serviceId}`);
@@ -190,7 +215,6 @@ export default function ServicesList() {
     try {
       await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
       
-      // Close the dropdown after successful update
       setOpenDropdowns(prev => {
         const newSet = new Set(prev);
         newSet.delete(`technician-${serviceId}`);
@@ -261,7 +285,7 @@ export default function ServicesList() {
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-black">Services</h1>
             <p className="text-gray-600 text-sm sm:text-base">
-              {filteredServices.length} total services
+              {displayServices.length} total services
             </p>
           </div>
           
@@ -280,7 +304,10 @@ export default function ServicesList() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48 bg-white">
                 <DropdownMenuItem 
-                  onClick={() => setSelectedBranch('All Branches')}
+                  onClick={() => {
+                    setSelectedBranch('All Branches');
+                    setCurrentPage(1);
+                  }}
                   className={selectedBranch === 'All Branches' ? 'bg-gray-100' : ''}
                 >
                   All Branches
@@ -288,7 +315,10 @@ export default function ServicesList() {
                 {branches.map((branch) => (
                   <DropdownMenuItem 
                     key={branch._id}
-                    onClick={() => setSelectedBranch(branch.branchName)}
+                    onClick={() => {
+                      setSelectedBranch(branch.branchName);
+                      setCurrentPage(1);
+                    }}
                     className={selectedBranch === branch.branchName ? 'bg-gray-100' : ''}
                   >
                     {branch.branchName}
@@ -318,23 +348,20 @@ export default function ServicesList() {
         </Button>
       </div>
 
-      {/* Filter Tabs - Updated to match customerlist style */}
+      {/* Filter Tabs */}
       <div className="flex gap-6">
         {filterOptions.map((option: string) => {
           const serviceCount = option === 'All' 
-            ? displayServices.filter(() => 
-                selectedBranch === 'All Branches'
-              ).length
-            : displayServices.filter(service => {
-                const matchesAction = service.action === option;
-                const matchesBranch = selectedBranch === 'All Branches';
-                return matchesAction && matchesBranch;
-              }).length;
+            ? displayServices.length
+            : displayServices.filter(service => service.action === option).length;
           
           return (
             <button
               key={option}
-              onClick={() => setActiveFilter(option)}
+              onClick={() => {
+                setActiveFilter(option);
+                setCurrentPage(1);
+              }}
               className={`px-2 py-2 text-sm font-medium transition-all relative ${
                 activeFilter === option
                   ? 'text-[#C5AA7E]'
@@ -353,7 +380,7 @@ export default function ServicesList() {
         })}
       </div>
 
-      {/* Search Section - Removed white background */}
+      {/* Search Section */}
       <div className="flex items-center">
         <div className="flex-1 lg:max-w-md">
           <div className="relative">
@@ -361,7 +388,10 @@ export default function ServicesList() {
             <Input
               placeholder="Search Service ID, Customer Name, Number"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               className="pl-10 border-gray-300"
             />
           </div>
@@ -547,7 +577,6 @@ export default function ServicesList() {
                           <DropdownMenuContent className="bg-white w-48">
                             <DropdownMenuItem 
                               onClick={(e) => {
-                                // Handle unassign if needed
                                 e.stopPropagation();
                               }}
                               className="font-medium"
@@ -626,7 +655,7 @@ export default function ServicesList() {
           ))}
         </div>
 
-        {filteredServices.length === 0 && (
+        {displayServices.length === 0 && (
           <div className="px-6 py-12 text-center">
             <div className="text-gray-500 font-medium">
               {searchQuery 
@@ -635,6 +664,40 @@ export default function ServicesList() {
                 ? `No services found with ${activeFilter} status.`
                 : 'No services found.'
               }
+            </div>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {displayServices.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+            <div className="text-sm text-gray-600">
+              Showing {Math.min((currentPage - 1) * servicesPerPage + 1, displayServices.length)} to{' '}
+              {Math.min(currentPage * servicesPerPage, displayServices.length)} of{' '}
+              {displayServices.length} services
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="border-gray-300"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="border-gray-300"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}

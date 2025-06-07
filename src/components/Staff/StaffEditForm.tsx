@@ -48,7 +48,7 @@ export default function StaffEditForm({ staffId }: StaffEditFormProps) {
   const [isFormInitialized, setIsFormInitialized] = useState(false);
 
 useEffect(() => {
-  if (staff && !isFormInitialized) {
+  if (staff && branches.length > 0 && !isFormInitialized) {
     let branchId = '';
     
     if (staff.branch) {
@@ -59,14 +59,18 @@ useEffect(() => {
       }
     }
     
+    // Verify that the branch exists in the branches array
+    const branchExists = branches.some(branch => branch._id === branchId);
+    
     console.log('Setting branch ID:', branchId);
     console.log('Available branches:', branches);
+    console.log('Branch exists in list:', branchExists);
     
     setFormData({
       staffName: staff.staffName || '',
       contactNumber: staff.contactNumber || '',
       role: staff.role || 'Staff',
-      branch: branchId,
+      branch: branchExists ? branchId : '', // Only set if branch exists
       address: staff.address || '',
       action: staff.action || 'Active'
     });
@@ -74,6 +78,32 @@ useEffect(() => {
     setIsFormInitialized(true);
   }
 }, [staff, branches, isFormInitialized]);
+
+// Add this second useEffect to handle cases where staff loads before branches
+useEffect(() => {
+  if (staff && branches.length > 0 && isFormInitialized && !formData.branch) {
+    let branchId = '';
+    
+    if (staff.branch) {
+      if (typeof staff.branch === 'object' && staff.branch._id) {
+        branchId = staff.branch._id;
+      } else if (typeof staff.branch === 'string') {
+        branchId = staff.branch;
+      }
+    }
+    
+    // Verify that the branch exists in the branches array
+    const branchExists = branches.some(branch => branch._id === branchId);
+    
+    if (branchExists && branchId) {
+      console.log('Updating branch field after branches loaded:', branchId);
+      setFormData(prev => ({
+        ...prev,
+        branch: branchId
+      }));
+    }
+  }
+}, [staff, branches, isFormInitialized, formData.branch]);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -121,7 +151,7 @@ useEffect(() => {
         id: staffId,
         data: formData
       });
-      toast.success('Staff member updated successfully!');
+      // toast.success('Staff member updated successfully!');
       router.push('/staff');
     } catch (err) {
       console.error('Error updating staff:', err);
