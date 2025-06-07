@@ -97,27 +97,24 @@ export const useUpdateService = () => {
 
 // Update service action/status
 export const useUpdateServiceAction = () => {
-  const queryClient = useQueryClient();
-  
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: ({ id, action }: { id: string; action: string }) =>
-      updateServiceAction(id, { action }),
+    mutationFn: ({ id, action, cancellationReason }: { id: string; action: string; cancellationReason?: string }) =>
+      updateServiceAction(id, { action, cancellationReason }),
     onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
-      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() })
       if (response?.data?.service?._id) {
-        queryClient.setQueryData(
-          serviceKeys.detail(response.data.service._id), 
-          response.data.service
-        );
+        queryClient.setQueryData(serviceKeys.detail(response.data.service._id), response.data.service)
       }
-      toast.success('Service status updated successfully!');
+      toast.success("Service status updated successfully!")
     },
     onError: (error: ApiResponse<unknown>) => {
-      const message = error?.message || 'Failed to update service status';
-      toast.error(message);
+      const message = error?.message || "Failed to update service status"
+      toast.error(message)
     },
-  });
-};
+  })
+}
 
 // Assign technician
 export const useAssignTechnician = () => {

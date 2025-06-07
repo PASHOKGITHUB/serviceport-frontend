@@ -5,11 +5,13 @@ import {
   getBranch,
   createBranch,
   updateBranch,
-  deleteBranch
+  deleteBranch,
+  updateBranchStatus  
 } from '@/instance/branches';
 import type { 
   CreateBranchRequest, 
-  UpdateBranchRequest 
+  UpdateBranchRequest,
+  UpdateBranchStatusRequest 
 } from '@/domain/entities/branch';
 
 // Query Keys
@@ -47,11 +49,8 @@ export const useCreateBranch = () => {
     mutationFn: (data: CreateBranchRequest) => createBranch(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
-      toast.success('Branch created successfully!');
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    // Remove onError completely to let component handle all error display
   });
 };
 
@@ -75,6 +74,28 @@ export const useUpdateBranch = () => {
     },
   });
 };
+
+
+export const useUpdateBranchStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateBranchStatusRequest }) => 
+      updateBranchStatus(id, data),
+    onSuccess: (updatedBranch) => {
+      queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
+      queryClient.setQueryData(
+        branchKeys.detail(updatedBranch._id), 
+        updatedBranch
+      );
+      toast.success(`Branch status updated to ${updatedBranch.status} successfully!`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+};
+
 
 // Delete branch
 export const useDeleteBranch = () => {

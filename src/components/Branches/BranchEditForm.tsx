@@ -146,6 +146,10 @@ export default function BranchEditForm({ branchId }: BranchEditFormProps) {
               Branches
             </Link>
             <ChevronRight className="h-4 w-4 text-gray-400" />
+            <Link href={`/branches/view/${branchId}`} className="text-gray-600 hover:text-gray-900 transition-colors">
+              View Branch Details
+            </Link>
+            <ChevronRight className="h-4 w-4 text-gray-400" />
             <span className="text-amber-700 font-medium">Edit Branch Details</span>
           </div>
 

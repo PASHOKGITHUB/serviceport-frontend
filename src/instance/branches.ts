@@ -2,7 +2,8 @@ import ApiClient from '@/lib/apiClient';
 import type { 
   Branch, 
   CreateBranchRequest, 
-  UpdateBranchRequest 
+  UpdateBranchRequest,
+  UpdateBranchStatusRequest
 } from '@/domain/entities/branch';
 import type { ApiResponse } from '@/domain/entities/common';
 
@@ -42,6 +43,16 @@ export const updateBranch = async (id: string, data: UpdateBranchRequest): Promi
     return response.data.data.branch;
   } catch (error: unknown) {
     const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update branch';
+    throw new Error(message);
+  }
+};
+
+export const updateBranchStatus = async (id: string, data: UpdateBranchStatusRequest): Promise<Branch> => {
+  try {
+    const response = await ApiClient.patch<ApiResponse<{ branch: Branch }>>(`/branches/${id}/status`, data);
+    return response.data.data.branch;
+  } catch (error: unknown) {
+    const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update branch status';
     throw new Error(message);
   }
 };
