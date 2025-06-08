@@ -163,7 +163,7 @@ export default function CreateServiceForm() {
     try {
       await createServiceMutation.mutateAsync(formData);
 
-      toast.success('Service created successfully!');
+      // toast.success('Service created successfully!');
 
       router.push('/services');
     } catch (err) {

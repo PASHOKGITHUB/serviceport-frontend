@@ -189,7 +189,7 @@ export default function StaffList() {
               placeholder="Search by name, contact, role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 border-gray-300"
+              className="pl-10 border-gray-300 placeholder:text-gray-400"
             />
           </div>
         </div>

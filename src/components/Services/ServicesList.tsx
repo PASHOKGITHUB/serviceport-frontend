@@ -25,6 +25,8 @@ import { useServices } from '@/hooks/useServices';
 import { useBranches } from '@/hooks/useBranches';
 import { useUpdateServiceCost, useUpdateServiceAction, useAssignTechnician } from '@/hooks/useServices';
 import { useTechnicians } from '@/hooks/useStaff';
+import { toast } from 'sonner';
+import { ApiError } from '@/types/error';
 
 // Types
 interface Service {
@@ -35,14 +37,14 @@ interface Service {
   action: string;
   address: string;
   location: string;
-  productDetails: Array<{
+  productDetails: {
     productName: string;
     serialNumber: string;
     brand: string;
     type: string;
     productIssue: string;
     _id: string;
-  }>;
+  };
   branchId: {
     _id: string;
     branchName: string;
@@ -93,6 +95,10 @@ export default function ServicesList() {
   const [newServiceLoading, setNewServiceLoading] = useState(false);
   const [loadingServiceId, setLoadingServiceId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancellationDialogOpen, setCancellationDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{serviceId: string, action: string} | null>(null);
+  const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
   const servicesPerPage = 10;
   
   const { data: servicesResponse, isLoading } = useServices();
@@ -141,9 +147,8 @@ export default function ServicesList() {
 
   // Get unique actions for filter tabs
   const filterOptions = useMemo(() => {
-    const actions = [...new Set(allServices.map(service => service.action).filter(Boolean))];
-    return ['All', ...actions];
-  }, [allServices]);
+  return ['All', ...ACTION_OPTIONS];
+}, []);
 
   // Pagination logic
   const totalPages = Math.ceil(displayServices.length / servicesPerPage);
@@ -188,25 +193,92 @@ export default function ServicesList() {
     router.push(`/services/view/${serviceId}`);
   };
 
-  const handleActionChange = async (e: React.MouseEvent, serviceId: string, newAction: string) => {
-    e.stopPropagation();
-    try {
-      setLoadingActions(prev => new Set(prev).add(serviceId));
-      await updateActionMutation.mutateAsync({ id: serviceId, action: newAction });
-      
-      setOpenDropdowns(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(`action-${serviceId}`);
-        return newSet;
-      });
-    } catch (err) {
-      console.error('Error updating service action:', err);
-    } finally {
-      setLoadingActions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(serviceId);
-        return newSet;
-      });
+const handleActionChange = async (e: React.MouseEvent, serviceId: string, newAction: string) => {
+  e.stopPropagation();
+  
+  // Get the current service
+  const service = allServices.find(s => s._id === serviceId);
+  
+  // Client-side validation for completion
+  if (newAction === 'Completed') {
+    if (!service?.serviceCost || service.serviceCost <= 0) {
+      toast.error('Please set the service cost before marking as completed');
+      return;
+    }
+  }
+  
+  // Check if moving from Completed to another status
+  if (service?.action === 'Completed' && newAction !== 'Completed') {
+    setPendingAction({ serviceId, action: newAction });
+    setConfirmationDialogOpen(true);
+    return;
+  }
+  
+  // Check if action is Cancelled
+  if (newAction === 'Cancelled') {
+    setPendingAction({ serviceId, action: newAction });
+    setCancellationDialogOpen(true);
+    return;
+  }
+  
+  // Proceed with regular action update
+  await updateAction(serviceId, newAction);
+};
+
+
+const updateAction = async (serviceId: string, newAction: string, cancellationReason?: string) => {
+  try {
+    setLoadingActions(prev => new Set(prev).add(serviceId));
+    await updateActionMutation.mutateAsync({ 
+      id: serviceId, 
+      action: newAction,
+      cancellationReason 
+    });
+    
+    setOpenDropdowns(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(`action-${serviceId}`);
+      return newSet;
+    });
+  } catch (err) {
+    console.error('Error updating service action:', err);
+    const error= err as ApiError
+    
+    // Handle specific error for service completion validation
+    if (error?.response?.data?.message?.includes('Service cost must be set')) {
+      toast.error('Please set the service cost before marking as completed');
+    } else if (error?.response?.data?.message) {
+      toast.error(error.response.data.message);
+    } else {
+      toast.error('Failed to update service status');
+    }
+  } finally {
+    setLoadingActions(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(serviceId);
+      return newSet;
+    });
+  }
+};
+
+  const handleConfirmCancellation = async () => {
+    if (pendingAction) {
+      if (!cancellationReason.trim()) {
+        toast.error('Cancellation reason is required');
+        return;
+      }
+      await updateAction(pendingAction.serviceId, pendingAction.action, cancellationReason);
+      setCancellationReason('');
+      setCancellationDialogOpen(false);
+      setPendingAction(null);
+    }
+  };
+
+  const handleConfirmActionChange = async () => {
+    if (pendingAction) {
+      await updateAction(pendingAction.serviceId, pendingAction.action);
+      setConfirmationDialogOpen(false);
+      setPendingAction(null);
     }
   };
 
@@ -349,36 +421,73 @@ export default function ServicesList() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-6">
-        {filterOptions.map((option: string) => {
-          const serviceCount = option === 'All' 
-            ? displayServices.length
-            : displayServices.filter(service => service.action === option).length;
-          
-          return (
-            <button
-              key={option}
-              onClick={() => {
-                setActiveFilter(option);
-                setCurrentPage(1);
-              }}
-              className={`px-2 py-2 text-sm font-medium transition-all relative ${
-                activeFilter === option
-                  ? 'text-[#C5AA7E]'
-                  : 'text-gray-600 hover:text-[#C5AA7E]'
-              }`}
-            >
-              {option}({serviceCount})
-              {activeFilter === option && (
-                <div 
-                  className="absolute bottom-0 left-0 right-0 h-0.5"
-                  style={{ backgroundColor: '#C5AA7E' }}
-                ></div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+<div className="flex flex-wrap gap-x-6 gap-y-2">
+  {filterOptions.map((option: string) => {
+    let serviceCount;
+    if (option === 'All') {
+      // For "All", count services that match current branch and search filters
+      let filtered = allServices;
+      
+      if (searchQuery) {
+        filtered = filtered.filter((service: Service) => 
+          service.serviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.customerContactNumber.includes(searchQuery)
+        );
+      }
+      
+      if (selectedBranch !== 'All Branches') {
+        filtered = filtered.filter(service => 
+          service.branchId?.branchName === selectedBranch
+        );
+      }
+      
+      serviceCount = filtered.length;
+    } else {
+      // For specific actions, count services that match all filters including the action
+      let filtered = allServices;
+      
+      if (searchQuery) {
+        filtered = filtered.filter((service: Service) => 
+          service.serviceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          service.customerContactNumber.includes(searchQuery)
+        );
+      }
+      
+      if (selectedBranch !== 'All Branches') {
+        filtered = filtered.filter(service => 
+          service.branchId?.branchName === selectedBranch
+        );
+      }
+      
+      serviceCount = filtered.filter(service => service.action === option).length;
+    }
+    
+    return (
+      <button
+        key={option}
+        onClick={() => {
+          setActiveFilter(option);
+          setCurrentPage(1);
+        }}
+        className={`px-2 py-2 text-sm font-medium transition-all relative ${
+          activeFilter === option
+            ? 'text-[#C5AA7E]'
+            : 'text-gray-600 hover:text-[#C5AA7E]'
+        }`}
+      >
+        {option}({serviceCount})
+        {activeFilter === option && (
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-0.5"
+            style={{ backgroundColor: '#C5AA7E' }}
+          ></div>
+        )}
+      </button>
+    );
+  })}
+</div>
 
       {/* Search Section */}
       <div className="flex items-center">
@@ -392,7 +501,7 @@ export default function ServicesList() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-10 border-gray-300"
+              className="pl-10 border-gray-300 placeholder:text-gray-400"
             />
           </div>
         </div>
@@ -455,7 +564,7 @@ export default function ServicesList() {
                           <div className="text-sm text-gray-900 break-words">{service.customerName}</div>
                           <div className="text-sm text-gray-500 break-all">{service.customerContactNumber}</div>
                           <div className="text-sm text-gray-500 break-words">
-                            {service.productDetails[0]?.productName || 'N/A'}
+                            {service.productDetails?.productName || 'N/A'}
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -539,11 +648,11 @@ export default function ServicesList() {
                       <div className="flex justify-center items-center">
                         <div className="text-center">
                           <div className="text-gray-900 break-words font-medium">
-                            {service.productDetails[0]?.productName || 'N/A'}
+                            {service.productDetails?.productName || 'N/A'}
                           </div>
-                          {service.productDetails[0]?.brand && (
+                          {service.productDetails?.brand && (
                             <div className="text-xs text-gray-500 font-medium">
-                              {service.productDetails[0].brand}
+                              {service.productDetails.brand}
                             </div>
                           )}
                         </div>
@@ -644,7 +753,7 @@ export default function ServicesList() {
                           className="px-3 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1 font-medium"
                         >
                           <IndianRupee className="h-3 w-3" />
-                          {service.serviceCost ? `₹${service.serviceCost}` : 'Amount'}
+                          {service.serviceCost ? `${service.serviceCost}` : 'Amount'}
                         </button>
                       </div>
                     </div>
@@ -741,6 +850,81 @@ export default function ServicesList() {
           </div>
         </div>
       )}
+
+      {/* Cancellation Reason Dialog */}
+      {cancellationDialogOpen && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">Cancellation Reason</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="reason" className="text-sm font-medium text-gray-700">Reason for Cancellation</Label>
+                <Input
+                  id="reason"
+                  type="text"
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="Enter reason for cancellation"
+                  className="mt-2 border-gray-300"
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleConfirmCancellation}
+                  disabled={!cancellationReason.trim()}
+                  className="flex-1 text-white font-medium"
+                  style={{ backgroundColor: '#925D00' }}
+                >
+                  Confirm Cancellation
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setCancellationDialogOpen(false);
+                    setCancellationReason('');
+                  }}
+                  className="flex-1 border-gray-300 font-medium"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Completed to Other Status */}
+{confirmationDialogOpen && (
+  <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-xl border border-gray-200">
+      <h3 className="text-lg font-semibold mb-4 text-gray-900">Confirm Action Change</h3>
+      <div className="space-y-4">
+        <p className="text-gray-700">
+          Changing status from Completed&apos; to &apos;{pendingAction?.action}&apos; will reset the service cost to 0. Do you want to proceed?
+        </p>
+        <div className="flex gap-3">
+          <Button 
+            onClick={handleConfirmActionChange}
+            className="flex-1 text-white font-medium"
+            style={{ backgroundColor: '#925D00' }}
+          >
+            Confirm
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setConfirmationDialogOpen(false);
+              setPendingAction(null);
+            }}
+            className="flex-1 border-gray-300 font-medium"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

@@ -55,7 +55,7 @@ export interface Service {
   serviceCost?: number;
   receivedDate: string | Date;
   deliveredDate?: string | Date;
-  productDetails: ProductDetails[];
+  productDetails: ProductDetails;
   branchId: string | Branch; // Can be either string or populated Branch object
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -79,7 +79,7 @@ export interface UpdateServiceRequest {
   customerContactNumber?: string;
   address?: string;
   location?: string;
-  productDetails: ProductDetails[];
+  productDetails: ProductDetails;
   serviceCost?: number;
   technician?: string;
   action?: ServiceAction;

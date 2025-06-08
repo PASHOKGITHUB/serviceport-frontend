@@ -288,9 +288,7 @@ const revenueTrend = calculateRevenueTrend();
       service.serviceId.toLowerCase().includes(query) ||
       service.customerName.toLowerCase().includes(query) ||
       service.customerContactNumber.includes(query) ||
-      service.productDetails.some(product => 
-        product.productName.toLowerCase().includes(query)
-      )
+      service.productDetails.productName.toLowerCase().includes(query)
     );
   }).slice(0, 10); // Show only first 10 services
 
@@ -449,7 +447,7 @@ const revenueTrend = calculateRevenueTrend();
             placeholder="Search ID, Name, Number, Serial Number, Product Name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 border-gray-300 bg-transparent"
+            className="pl-10 border-gray-300 bg-transparent placeholder:text-gray-400"
           />
         </div>
       </div>
@@ -544,10 +542,10 @@ const revenueTrend = calculateRevenueTrend();
                           <div>
                             <span className="text-sm font-medium text-gray-500">Product: </span>
                             <span className="text-sm text-gray-900 break-words font-medium">
-                              {service.productDetails[0]?.productName || 'N/A'}
+                              {service.productDetails?.productName || 'N/A'}
                             </span>
-                            {service.productDetails[0]?.brand && (
-                              <span className="text-sm text-gray-500 font-medium"> - {service.productDetails[0].brand}</span>
+                            {service.productDetails?.brand && (
+                              <span className="text-sm text-gray-500 font-medium"> - {service.productDetails.brand}</span>
                             )}
                           </div>
                           <div>
@@ -584,10 +582,10 @@ const revenueTrend = calculateRevenueTrend();
                         </div>
                         <div className="flex flex-col items-center justify-center text-center">
                           <div className="font-medium text-gray-900 break-words text-sm">
-                            {service.productDetails[0]?.productName || 'N/A'}
+                            {service.productDetails?.productName || 'N/A'}
                           </div>
                           <div className="text-xs text-gray-500 break-words font-medium">
-                            {service.productDetails[0]?.brand || ''}
+                            {service.productDetails?.brand || ''}
                           </div>
                         </div>
                         <div className="flex justify-center items-center">

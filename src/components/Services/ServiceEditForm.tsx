@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { ChevronRight, Plus, Trash2, Save, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronRight, Save, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useService, useUpdateService } from '@/hooks/useServices';
 import type { UpdateServiceRequest, ProductDetails } from '@/domain/entities/service';
@@ -39,9 +39,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     customerContactNumber: '',
     address: '',
     location: '',
-    productDetails: [
-      { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' }
-    ],
+    productDetails: { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' },
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
@@ -54,9 +52,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
         customerContactNumber: service.customerContactNumber || '',
         address: service.address || '',
         location: service.location || '',
-        productDetails: service.productDetails || [
-          { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' }
-        ],
+        productDetails: service.productDetails || { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' },
       });
     }
   }, [service]);
@@ -87,72 +83,65 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
     }
 
     // Product details validation
-    const productErrors: { [key: number]: { [key: string]: string } } = {};
-    formData.productDetails?.forEach((product, index) => {
-      const productError: { [key: string]: string } = {};
-      
-      if (!product.productName.trim()) {
+    const productError: { [key: string]: string } = {};
+
+      if (!formData.productDetails?.productName?.trim()) {
         productError.productName = 'Product name is required';
       }
-      if (!product.brand.trim()) {
+      if (!formData.productDetails?.brand?.trim()) {
         productError.brand = 'Brand is required';
       }
-      if (!product.type.trim()) {
+      if (!formData.productDetails?.type?.trim()) {
         productError.type = 'Type is required';
       }
-      if (!product.productIssue.trim()) {
+      if (!formData.productDetails?.productIssue?.trim()) {
         productError.productIssue = 'Product issue is required';
       }
 
       if (Object.keys(productError).length > 0) {
-        productErrors[index] = productError;
+        errors.productDetails = { 0: productError };
       }
-    });
-
-    if (Object.keys(productErrors).length > 0) {
-      errors.productDetails = productErrors;
-    }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const addProduct = () => {
-    setFormData({
-      ...formData,
-      productDetails: [
-        ...(formData.productDetails || []),
-        { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' }
-      ]
-    });
-  };
+  // const addProduct = () => {
+  //   setFormData({
+  //     ...formData,
+  //     productDetails: [
+  //       ...(formData.productDetails || []),
+  //       { productName: '', serialNumber: '', brand: '', type: '', productIssue: '' }
+  //     ]
+  //   });
+  // };
 
-  const removeProduct = (index: number) => {
-    if (formData.productDetails && formData.productDetails.length > 1) {
-      const newProducts = formData.productDetails.filter((_, i) => i !== index);
-      setFormData({ ...formData, productDetails: newProducts });
+  // const removeProduct = (index: number) => {
+  //   if (formData.productDetails && formData.productDetails.length > 1) {
+  //     const newProducts = formData.productDetails.filter((_, i) => i !== index);
+  //     setFormData({ ...formData, productDetails: newProducts });
       
-      // Clear validation errors for removed product
-      if (validationErrors.productDetails) {
-        const newProductErrors = { ...validationErrors.productDetails };
-        delete newProductErrors[index];
-        setValidationErrors({ ...validationErrors, productDetails: newProductErrors });
-      }
-    }
-  };
+  //     // Clear validation errors for removed product
+  //     if (validationErrors.productDetails) {
+  //       const newProductErrors = { ...validationErrors.productDetails };
+  //       delete newProductErrors[index];
+  //       setValidationErrors({ ...validationErrors, productDetails: newProductErrors });
+  //     }
+  //   }
+  // };
 
-  const updateProduct = (index: number, field: keyof ProductDetails, value: string) => {
-    if (!formData.productDetails) return;
-    const newProducts = [...formData.productDetails];
-    newProducts[index] = { ...newProducts[index], [field]: value };
-    setFormData({ ...formData, productDetails: newProducts });
+  const updateProduct = (field: keyof ProductDetails, value: string) => {
+    setFormData({ 
+      ...formData, 
+      productDetails: { ...formData.productDetails, [field]: value }
+    });
 
     // Clear validation error for this field
-    if (validationErrors.productDetails?.[index]?.[field]) {
+    if (validationErrors.productDetails?.[0]?.[field]) {
       const newProductErrors = { ...validationErrors.productDetails };
-      delete newProductErrors[index][field];
-      if (Object.keys(newProductErrors[index]).length === 0) {
-        delete newProductErrors[index];
+      delete newProductErrors[0][field];
+      if (Object.keys(newProductErrors[0]).length === 0) {
+        delete newProductErrors[0];
       }
       setValidationErrors({ ...validationErrors, productDetails: newProductErrors });
     }
@@ -177,7 +166,7 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
         id: serviceId,
         data: formData
       });
-      toast.success('Service updated successfully!');
+      // toast.success('Service updated successfully!');
       router.push('/services');
     } catch (err) {
       console.error('Error updating service:', err);
@@ -417,152 +406,115 @@ export default function EditServiceForm({ serviceId }: EditServiceFormProps) {
           </Card>
 
           {/* Product Details Card */}
-          <Card className="shadow-sm border-gray-200 overflow-hidden bg-transparent rounded-none p-0">
-            <CardHeader className="py-6 bg-[#EFEAE3] w-full">
-              <CardTitle className="text-lg text-center text-black font-medium">Product Details</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 bg-transparent">
-              <div className="space-y-8">
-                {(formData.productDetails || []).map((product, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-6 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium text-black text-lg">Product {index + 1}</h3>
-                      {formData.productDetails && formData.productDetails.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeProduct(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    {/* First Row - Product Name and Serial Number */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label htmlFor={`productName-${index}`} className="text-sm font-medium text-black">
-                          Product Name
-                        </Label>
-                        <Input
-                          id={`productName-${index}`}
-                          value={product.productName}
-                          onChange={(e) => updateProduct(index, 'productName', e.target.value)}
-                          placeholder="Enter product name"
-                          className={`${inputClasses} bg-white ${
-                            validationErrors.productDetails?.[index]?.productName ? errorInputClasses : ''
-                          }`}
-                          required
-                        />
-                        {validationErrors.productDetails?.[index]?.productName && (
-                          <div className="flex items-center gap-2 text-red-600 text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <span>{validationErrors.productDetails[index].productName}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor={`serialNumber-${index}`} className="text-sm font-medium text-black">
-                          Serial Number
-                        </Label>
-                        <Input
-                          id={`serialNumber-${index}`}
-                          value={product.serialNumber}
-                          onChange={(e) => updateProduct(index, 'serialNumber', e.target.value)}
-                          placeholder="Enter serial number"
-                          className={`${inputClasses} bg-white`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Second Row - Brand and Type */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label htmlFor={`brand-${index}`} className="text-sm font-medium text-black">
-                          Brand
-                        </Label>
-                        <Input
-                          id={`brand-${index}`}
-                          value={product.brand}
-                          onChange={(e) => updateProduct(index, 'brand', e.target.value)}
-                          placeholder="Enter brand"
-                          className={`${inputClasses} bg-white ${
-                            validationErrors.productDetails?.[index]?.brand ? errorInputClasses : ''
-                          }`}
-                          required
-                        />
-                        {validationErrors.productDetails?.[index]?.brand && (
-                          <div className="flex items-center gap-2 text-red-600 text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <span>{validationErrors.productDetails[index].brand}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <Label htmlFor={`type-${index}`} className="text-sm font-medium text-black">
-                          Type
-                        </Label>
-                        <Input
-                          id={`type-${index}`}
-                          value={product.type}
-                          onChange={(e) => updateProduct(index, 'type', e.target.value)}
-                          placeholder="Enter product type"
-                          className={`${inputClasses} bg-white ${
-                            validationErrors.productDetails?.[index]?.type ? errorInputClasses : ''
-                          }`}
-                          required
-                        />
-                        {validationErrors.productDetails?.[index]?.type && (
-                          <div className="flex items-center gap-2 text-red-600 text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <span>{validationErrors.productDetails[index].type}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Third Row - Product Issue (Full Width) */}
-                    <div className="space-y-3">
-                      <Label htmlFor={`issue-${index}`} className="text-sm font-medium text-black">
-                        Product Issue
-                      </Label>
-                      <Textarea
-                        id={`issue-${index}`}
-                        value={product.productIssue}
-                        onChange={(e) => updateProduct(index, 'productIssue', e.target.value)}
-                        placeholder="Describe the issue"
-                        className={`min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white ${
-                          validationErrors.productDetails?.[index]?.productIssue ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
-                        }`}
-                        required
-                      />
-                      {validationErrors.productDetails?.[index]?.productIssue && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm">
-                          <AlertCircle className="h-4 w-4" />
-                          <span>{validationErrors.productDetails[index].productIssue}</span>
-                        </div>
-                      )}
-                    </div>
+          <div className="border border-gray-200 rounded-lg p-6 space-y-6 bg-gray-50">
+            <h3 className="font-medium text-black text-lg">Product Details</h3>
+            
+            {/* First Row - Product Name and Serial Number */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="productName" className="text-sm font-medium text-black">
+                  Product Name
+                </Label>
+                <Input
+                  id="productName"
+                  value={formData.productDetails?.productName || ''}
+                  onChange={(e) => updateProduct('productName', e.target.value)}
+                  placeholder="Enter product name"
+                  className={`${inputClasses} ${
+                    validationErrors.productDetails?.[0]?.productName ? errorInputClasses : ''
+                  }`}
+                  required
+                />
+                {validationErrors.productDetails?.[0]?.productName && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{validationErrors.productDetails[0].productName}</span>
                   </div>
-                ))}
-                
-                {/* Add Product Button */}
-                <div className="flex justify-end">
-                  <Button 
-                    type="button" 
-                    variant="ghost"
-                    onClick={addProduct}
-                    className="text-amber-700 hover:bg-amber-50 flex items-center gap-2 border-none"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
-                </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-3">
+                <Label htmlFor="serialNumber" className="text-sm font-medium text-black">
+                  Serial Number
+                </Label>
+                <Input
+                  id="serialNumber"
+                  value={formData.productDetails?.serialNumber || ''}
+                  onChange={(e) => updateProduct('serialNumber', e.target.value)}
+                  placeholder="Enter serial number"
+                  className={`${inputClasses} `}
+                />
+              </div>
+            </div>
+
+            {/* Second Row - Brand and Type */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label htmlFor="brand" className="text-sm font-medium text-black">
+                  Brand
+                </Label>
+                <Input
+                  id="brand"
+                  value={formData.productDetails?.brand || ''}
+                  onChange={(e) => updateProduct('brand', e.target.value)}
+                  placeholder="Enter brand"
+                  className={`${inputClasses}  ${
+                    validationErrors.productDetails?.[0]?.brand ? errorInputClasses : ''
+                  }`}
+                  required
+                />
+                {validationErrors.productDetails?.[0]?.brand && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{validationErrors.productDetails[0].brand}</span>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <Label htmlFor="type" className="text-sm font-medium text-black">
+                  Type
+                </Label>
+                <Input
+                  id="type"
+                  value={formData.productDetails?.type || ''}
+                  onChange={(e) => updateProduct('type', e.target.value)}
+                  placeholder="Enter product type"
+                  className={`${inputClasses}  ${
+                    validationErrors.productDetails?.[0]?.type ? errorInputClasses : ''
+                  }`}
+                  required
+                />
+                {validationErrors.productDetails?.[0]?.type && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>{validationErrors.productDetails[0].type}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Third Row - Product Issue (Full Width) */}
+            <div className="space-y-3">
+              <Label htmlFor="issue" className="text-sm font-medium text-black">
+                Product Issue
+              </Label>
+              <Textarea
+                id="issue"
+                value={formData.productDetails?.productIssue || ''}
+                onChange={(e) => updateProduct('productIssue', e.target.value)}
+                placeholder="Describe the issue"
+                className={`min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white ${
+                  validationErrors.productDetails?.[0]?.productIssue ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
+                required
+              />
+              {validationErrors.productDetails?.[0]?.productIssue && (
+                <div className="flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{validationErrors.productDetails[0].productIssue}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </form>
       </div>
     </div>

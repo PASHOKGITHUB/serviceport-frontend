@@ -35,6 +35,13 @@ export const serviceKeys = {
   stats: () => [...serviceKeys.all, 'stats'] as const,
 };
 
+// Customer Query Keys - Add this to match your customers hook
+export const customerKeys = {
+  all: ['customers'] as const,
+  lists: () => [...customerKeys.all, 'list'] as const,
+  search: (query: string) => [...customerKeys.all, 'search', query] as const,
+};
+
 // Get all services
 export const useServices = (filters?: ServiceFilters) => {
   return useQuery({
@@ -62,6 +69,8 @@ export const useCreateService = () => {
     mutationFn: (data: CreateServiceRequest) => createService(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      // Also invalidate customers when a new service is created
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
       toast.success('Service created successfully!');
     },
     onError: (error: ApiResponse<unknown>) => {
@@ -79,7 +88,20 @@ export const useUpdateService = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdateServiceRequest }) => 
       updateService(id, data),
     onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
+      // Invalidate services cache
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      
+      // Invalidate customers cache to reflect updated service details
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      
+      // Also invalidate any search results
+      queryClient.invalidateQueries({ 
+        queryKey: customerKeys.all,
+        predicate: (query) => {
+          return query.queryKey[0] === 'customers' && query.queryKey[1] === 'search';
+        }
+      });
+      
       if (response?.data?.service?._id) {
         queryClient.setQueryData(
           serviceKeys.detail(response.data.service._id), 
@@ -104,6 +126,10 @@ export const useUpdateServiceAction = () => {
       updateServiceAction(id, { action, cancellationReason }),
     onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() })
+      
+      // Invalidate customers cache when service action/status changes
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      
       if (response?.data?.service?._id) {
         queryClient.setQueryData(serviceKeys.detail(response.data.service._id), response.data.service)
       }
@@ -125,6 +151,10 @@ export const useAssignTechnician = () => {
       assignTechnician(id, { technicianId }),
     onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      
+      // Invalidate customers cache when technician is assigned
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      
       if (response?.data?.service?._id) {
         queryClient.setQueryData(
           serviceKeys.detail(response.data.service._id), 
@@ -149,6 +179,10 @@ export const useUpdateServiceCost = () => {
       updateServiceCost(id, { serviceCost }),
     onSuccess: (response: ApiResponse<{ service: { _id: string } }>) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      
+      // Invalidate customers cache when service cost is updated
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      
       if (response?.data?.service?._id) {
         queryClient.setQueryData(
           serviceKeys.detail(response.data.service._id), 
@@ -172,6 +206,10 @@ export const useDeleteService = () => {
     mutationFn: (id: string) => deleteService(id),
     onSuccess: (_, deletedId: string) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      
+      // Invalidate customers cache when service is deleted
+      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      
       queryClient.removeQueries({ queryKey: serviceKeys.detail(deletedId) });
       toast.success('Service deleted successfully!');
     },
