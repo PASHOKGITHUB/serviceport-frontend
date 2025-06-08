@@ -15,21 +15,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useService } from '@/hooks/useServices';
-import type { ProductDetails } from '@/domain/entities/service';
-
-// Status hierarchy for validation
-// const STATUS_HIERARCHY = [
-//   'Received',
-//   'Assigned to Technician',
-//   'Under Inspection',
-//   'Waiting for Customer Approval',
-//   'Approved',
-//   'In Service',
-//   'Finished',
-//   'Delivered',
-//   'Completed',
-//   'Cancelled'
-// ];
 
 interface ServiceViewProps {
   serviceId?: string;
@@ -40,69 +25,9 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
   const router = useRouter();
   const serviceId = propServiceId || (params.id as string);
   
-  // const [costDialogOpen, setCostDialogOpen] = useState(false);
-  // const [newCost, setNewCost] = useState('');
   const [isEditLoading, setIsEditLoading] = useState(false);
   
   const { data: service, isLoading } = useService(serviceId);
-  
-  // const technicians = techniciansResponse || [];
-  
-  // const updateActionMutation = useUpdateServiceAction();
-  // const assignTechnicianMutation = useAssignTechnician();
-  // const updateCostMutation = useUpdateServiceCost();
-
-  // Get valid next statuses based on current status
-  // const getValidNextStatuses = (currentStatus: string) => {
-  //   const currentIndex = STATUS_HIERARCHY.indexOf(currentStatus);
-  //   if (currentIndex === -1) return STATUS_HIERARCHY;
-    
-  //   // Allow current status, next status, and cancelled
-  //   const validStatuses = [currentStatus];
-  //   if (currentIndex < STATUS_HIERARCHY.length - 2) {
-  //     validStatuses.push(STATUS_HIERARCHY[currentIndex + 1]);
-  //   }
-  //   if (currentStatus !== 'Cancelled') {
-  //     validStatuses.push('Cancelled');
-  //   }
-  //   return validStatuses;
-  // };
-
-  // const handleStatusChange = async (newStatus: string) => {
-  //   try {
-  //     await updateActionMutation.mutateAsync({ id: serviceId, action: newStatus });
-  //   } catch (err) {
-  //     console.error('Error updating service status:', err);
-  //   }
-  // };
-
-  // const handleTechnicianChange = async (technicianId: string) => {
-  //   try {
-  //     await assignTechnicianMutation.mutateAsync({ id: serviceId, technicianId });
-  //   } catch (error) {
-  //     console.error('Error assigning technician:', error);
-  //   }
-  // };
-
-  // const handleCostUpdate = async () => {
-  //   if (newCost) {
-  //     try {
-  //       await updateCostMutation.mutateAsync({ 
-  //         id: serviceId, 
-  //         serviceCost: parseFloat(newCost) 
-  //       });
-  //       setCostDialogOpen(false);
-  //       setNewCost('');
-  //     } catch (error) {
-  //       console.error('Error updating service cost:', error);
-  //     }
-  //   }
-  // };
-
-  // const openCostDialog = () => {
-  //   setNewCost(service?.serviceCost?.toString() || '');
-  //   setCostDialogOpen(true);
-  // };
 
   const handleEditClick = async () => {
     setIsEditLoading(true);
@@ -265,73 +190,72 @@ export default function ServiceView({ serviceId: propServiceId }: ServiceViewPro
             </CardHeader>
             <CardContent className="p-8 bg-transparent">
               <div className="space-y-8">
-                {service.productDetails.map((product: ProductDetails, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-6 space-y-6 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium text-black text-lg">Product {index + 1}</h3>
-                    </div>
-                    
-                    {/* First Row - Product Name and Serial Number */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">
-                          Product Name
-                        </Label>
-                        <Input
-                          value={product.productName}
-                          readOnly
-                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">
-                          Serial Number
-                        </Label>
-                        <Input
-                          value={product.serialNumber}
-                          readOnly
-                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Second Row - Brand and Type */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">
-                          Brand
-                        </Label>
-                        <Input
-                          value={product.brand}
-                          readOnly
-                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <Label className="text-sm font-medium text-black">
-                          Type
-                        </Label>
-                        <Input
-                          value={product.type}
-                          readOnly
-                          className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Third Row - Product Issue (Full Width) */}
+                {/* Single Product Details - Matching the edit form structure */}
+                <div className="border border-gray-200 rounded-lg p-6 space-y-6 bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium text-black text-lg">Product Details</h3>
+                  </div>
+                  
+                  {/* First Row - Product Name and Serial Number */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <Label className="text-sm font-medium text-black">
-                        Product Issue
+                        Product Name
                       </Label>
-                      <Textarea
-                        value={product.productIssue}
+                      <Input
+                        value={service.productDetails?.productName || ''}
                         readOnly
-                        className="min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900  cursor-not-allowed resize-none"
+                        className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-black">
+                        Serial Number
+                      </Label>
+                      <Input
+                        value={service.productDetails?.serialNumber || ''}
+                        readOnly
+                        className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
                       />
                     </div>
                   </div>
-                ))}
+
+                  {/* Second Row - Brand and Type */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-black">
+                        Brand
+                      </Label>
+                      <Input
+                        value={service.productDetails?.brand || ''}
+                        readOnly
+                        className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-black">
+                        Type
+                      </Label>
+                      <Input
+                        value={service.productDetails?.type || ''}
+                        readOnly
+                        className="h-11 w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Third Row - Product Issue (Full Width) */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-black">
+                      Product Issue
+                    </Label>
+                    <Textarea
+                      value={service.productDetails?.productIssue || ''}
+                      readOnly
+                      className="min-h-[120px] w-full px-3 border border-gray-300 rounded-md text-gray-900 cursor-not-allowed resize-none"
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
