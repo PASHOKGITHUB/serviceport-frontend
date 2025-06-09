@@ -15,38 +15,57 @@ import {
   X
 } from 'lucide-react';
 import Image from 'next/image';
+import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/hooks/useAuth';
 
 const sidebarItems = [
   {
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    roles: ['admin', 'manager', 'staff', 'Technician', 'Staff', 'Manager'], // Available to all roles
   },
   {
     title: 'Service',
     href: '/services',
     icon: Wrench,
+    roles: ['admin', 'manager', 'staff', 'Technician', 'Staff', 'Manager'], // Available to all roles
   },
   {
     title: 'Customers',
     href: '/customers',
     icon: Users,
+    roles: ['admin', 'manager', 'staff', 'Technician', 'Staff', 'Manager'], // Available to all roles
   },
   {
     title: 'Branch',
     href: '/branches',
     icon: Building2,
+    roles: ['admin'], // Only for admin users
   },
   {
     title: 'Staff',
     href: '/staff',
     icon: UserCog,
+    roles: ['admin'], // Only for admin users
   },
 ];
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuthStore();
+  const { data: currentUser } = useCurrentUser();
+
+  // Use currentUser from API if available, fallback to store user
+  const displayUser = currentUser || user;
+  const userRole = displayUser?.role;
+
+  // Filter sidebar items based on user role
+  const filteredSidebarItems = sidebarItems.filter(item => {
+    if (!userRole) return false;
+    return item.roles.includes(userRole);
+  });
 
   return (
     <>
@@ -79,10 +98,9 @@ export default function Sidebar() {
           <div className="flex items-center gap-2">
             <Image 
               src="/logo.svg" 
-              alt="Rent O Rent Logo" 
+              alt="CAMERA PORT Logo" 
               width={32}
               height={32}
-              // className="h-8 w-auto"
             />
           </div>
           <Button
@@ -97,7 +115,7 @@ export default function Sidebar() {
 
         {/* Navigation - scrollable if needed */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {sidebarItems.map((item) => {
+          {filteredSidebarItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             const Icon = item.icon;
 

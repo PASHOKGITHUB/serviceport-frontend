@@ -25,6 +25,7 @@ export type StaffStatus = 'Active' | 'Inactive';
 export interface CreateStaffRequest {
   staffName: string;
   contactNumber: string;
+  password?: string;
   role: StaffRole;
   branch: string;
   action?: StaffStatus;
@@ -35,6 +36,7 @@ export interface CreateStaffRequest {
 export interface UpdateStaffRequest {
   staffName?: string;
   contactNumber?: string;
+  password?: string;
   role?: StaffRole;
   branch?: string;
   action?: StaffStatus;

@@ -11,6 +11,7 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   setAuth: (user: User, token: string) => void;
+  setUser: (user: User) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   initializeAuth: () => void;
@@ -46,6 +47,11 @@ export const useAuthStore = create<AuthState>()(
           isLoading: false,
           isInitialized: true
         });
+      },
+
+      setUser: (user) => {
+        console.log('👤 Setting user data:', user.userName);
+        set({ user });
       },
       
       logout: () => {
@@ -183,11 +189,11 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
+        user: state.user, // Persist user data
         // Don't persist token in Zustand, rely on cookie/localStorage
       }),
       onRehydrateStorage: () => (state) => {
-        console.log('🔄 Auth store rehydrated');
+        console.log('🔄 Auth store rehydrated with user:', state?.user?.userName);
         if (state && typeof window !== 'undefined') {
           // Initialize auth after rehydration
           setTimeout(() => {

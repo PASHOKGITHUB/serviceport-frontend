@@ -2,12 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import { 
-  loginUser, 
   registerUser, 
   getCurrentUser, 
   getAllUsers 
 } from '@/instance/auth';
-import type { LoginRequest, RegisterRequest } from '@/domain/entities/auth';
+import type { LoginRequest, RegisterRequest, User } from '@/domain/entities/auth';
+import ApiClient from '@/lib/apiClient';
+import { ApiResponse } from '@/domain/entities/common';
 
 // Query Keys
 export const authKeys = {
@@ -29,15 +30,19 @@ export const useCurrentUser = () => {
   });
 };
 
+
 // Login mutation
 export const useLogin = () => {
   const { setAuth, setLoading } = useAuthStore();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: LoginRequest) => {
-      setLoading(true);
-      return loginUser(data);
+    mutationFn: async (data: LoginRequest) => {
+      const response = await ApiClient.post<ApiResponse<{ 
+        user: User; 
+        token: string 
+      }>>('/auth/login', data);
+      return response.data.data;
     },
     onSuccess: (data) => {
       setAuth(data.user, data.token);

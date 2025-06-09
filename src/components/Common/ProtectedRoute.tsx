@@ -14,10 +14,10 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({
   children,
-  allowedRoles = ['admin', 'manager', 'staff'],
+  allowedRoles = ['admin', 'manager', 'staff','Technician', 'Staff', 'Manager'],
 }: ProtectedRouteProps) {
   const router = useRouter();
-  const { token, user, initializeAuth, logout } = useAuthStore();
+  const { token, user, initializeAuth, logout, setUser } = useAuthStore();
   const { data: currentUser, isLoading, error } = useCurrentUser();
   const [isMounted, setIsMounted] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
@@ -38,6 +38,14 @@ export default function ProtectedRoute({
     setIsMounted(true);
     initializeAuth();
   }, [initializeAuth]);
+
+  // Update user data when currentUser is fetched
+  useEffect(() => {
+    if (currentUser && (!user || user.userName !== currentUser.userName)) {
+      console.log('👤 Updating user data in store:', currentUser.userName);
+      setUser(currentUser);
+    }
+  }, [currentUser, user, setUser]);
 
   // Authentication check
   useEffect(() => {
@@ -64,15 +72,17 @@ export default function ProtectedRoute({
         return;
       }
 
-      // If we have a token and no errors, validation is complete
-      setIsValidating(false);
-      console.log('✅ Auth validation complete');
+      // If we have a token and user data is available, validation is complete
+      if (token && (currentUser || user || !isLoading)) {
+        setIsValidating(false);
+        console.log('✅ Auth validation complete');
+      }
     };
 
     // Small delay to allow auth store to initialize
     const timeoutId = setTimeout(performAuthCheck, 100);
     return () => clearTimeout(timeoutId);
-  }, [token, error, isMounted, logout, router, hasRedirected]);
+  }, [token, error, isMounted, logout, router, hasRedirected, currentUser, user, isLoading]);
 
   // Role-based access control
   useEffect(() => {
