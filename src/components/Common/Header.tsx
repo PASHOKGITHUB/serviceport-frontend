@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/store/authStore';
+import { useCurrentUser } from '@/hooks/useAuth';
 import { useLogout } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,14 +15,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogOut, User, Menu } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect } from 'react';
 
 interface HeaderProps {
   title?: string;
 }
 
 export default function Header({ title }: HeaderProps) {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const logoutMutation = useLogout();
+
+  // Update store user when currentUser is fetched
+  useEffect(() => {
+    if (currentUser && (!user || user.userName !== currentUser.userName)) {
+      console.log('🔄 Header: Updating user data from API');
+      setUser(currentUser);
+    }
+  }, [currentUser, user, setUser]);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -30,6 +41,29 @@ export default function Header({ title }: HeaderProps) {
   const handleMobileMenuClick = () => {
     // Placeholder for mobile menu functionality
     console.log('Mobile menu clicked');
+  };
+
+  // Use currentUser from API first, then fall back to store user
+  const displayUser = currentUser || user;
+  
+  // Log user data for debugging
+  console.log('🎯 Header user data:', {
+    currentUser: currentUser?.userName,
+    storeUser: user?.userName,
+    displayUser: displayUser?.userName,
+    isLoading: isUserLoading
+  });
+
+  // Generate user initials
+  const getUserInitials = (userName?: string) => {
+    if (!userName) return 'U';
+    return userName.slice(0, 2).toUpperCase();
+  };
+
+  // Format role for display
+  const formatRole = (role?: string) => {
+    if (!role) return 'User';
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
   };
 
   return (
@@ -63,12 +97,14 @@ export default function Header({ title }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Only show role, no username */}
           <div className="text-right hidden sm:block">
-            <div className="font-medium text-gray-900 text-sm">
-              {user?.userName || 'Daniel Roberts'}
-            </div>
-            <div className="text-xs text-gray-500">
-              {user?.role || 'user'}
+            <div className="text-sm text-gray-600 font-medium">
+              {isUserLoading ? (
+                <div className="animate-pulse bg-gray-200 h-4 w-16 rounded"></div>
+              ) : (
+                formatRole(displayUser?.role)
+              )}
             </div>
           </div>
           <DropdownMenu>
@@ -77,7 +113,7 @@ export default function Header({ title }: HeaderProps) {
                 <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                   <AvatarImage src="/placeholder.svg" />
                   <AvatarFallback className="bg-amber-600 text-white text-xs sm:text-sm">
-                    {user?.userName?.slice(0, 2).toUpperCase() || 'DR'}
+                    {getUserInitials(displayUser?.role)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -85,11 +121,12 @@ export default function Header({ title }: HeaderProps) {
             <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200 shadow-lg">
               <DropdownMenuLabel className="text-gray-900">
                 <div className="sm:hidden">
+                  {/* On mobile, show username in dropdown */}
                   <div className="font-medium text-gray-900">
-                    {user?.userName || 'Daniel Roberts'}
+                    {isUserLoading ? 'Loading...' : (displayUser?.userName || 'Unknown User')}
                   </div>
                   <div className="text-sm text-gray-500">
-                    Receptionist
+                    {isUserLoading ? 'Loading...' : formatRole(displayUser?.role)}
                   </div>
                 </div>
                 <div className="hidden sm:block">My Account</div>

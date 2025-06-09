@@ -15,6 +15,7 @@ import { useCreateStaff } from '@/hooks/useStaff';
 import { useBranches } from '@/hooks/useBranches';
 import type { CreateStaffRequest, StaffRole } from '@/domain/entities/staff';
 import { ApiError } from '@/types/error';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface ValidationErrors {
   staffName?: string;
@@ -22,6 +23,7 @@ interface ValidationErrors {
   role?: string;
   branch?: string;
   address?: string;
+  password?: string;
 }
 
 // Skeleton loading component for create staff form
@@ -106,9 +108,11 @@ export default function CreateStaffForm() {
     branch: '',
     address: '',
     action: 'Active',
+    password: ''
   });
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const errors: ValidationErrors = {};
@@ -140,6 +144,12 @@ export default function CreateStaffForm() {
       errors.address = 'Address is required';
     }
 
+    if (!formData.password!.trim()) {
+    errors.password = 'Password is required';
+  } else if (formData.password!.length < 6) {
+    errors.password = 'Password must be at least 6 characters';
+  }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -160,7 +170,7 @@ export default function CreateStaffForm() {
     
     try {
       await createStaffMutation.mutateAsync(formData);
-      toast.success('Staff member created successfully!');
+      // toast.success('Staff member created successfully!');
       router.push('/staff');
     } catch (err) {
       console.error('Error creating staff:', err);
@@ -242,60 +252,105 @@ export default function CreateStaffForm() {
             <CardContent className="p-8 bg-transparent">
               <div className="space-y-8">
                 {/* First Row - Full Name and Contact Number */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <Label htmlFor="fullName" className="text-sm font-medium text-black">
-                      Full name
-                    </Label>
-                    <Input
-                      id="fullName"
-                      value={formData.staffName}
-                      onChange={(e) => {
-                        setFormData({ ...formData, staffName: e.target.value });
-                        if (validationErrors.staffName) {
-                          setValidationErrors({ ...validationErrors, staffName: undefined });
-                        }
-                      }}
-                      placeholder="Full name"
-                      className={`${inputClasses} ${
-                        validationErrors.staffName ? errorInputClasses : ''
-                      }`}
-                      required
-                    />
-                    {validationErrors.staffName && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        <span>{validationErrors.staffName}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="contactNumber" className="text-sm font-medium text-black">
-                      Contact number
-                    </Label>
-                    <Input
-                      id="contactNumber"
-                      value={formData.contactNumber}
-                      onChange={(e) => {
-                        setFormData({ ...formData, contactNumber: e.target.value });
-                        if (validationErrors.contactNumber) {
-                          setValidationErrors({ ...validationErrors, contactNumber: undefined });
-                        }
-                      }}
-                      placeholder="Phone number"
-                      className={`${inputClasses} ${
-                        validationErrors.contactNumber ? errorInputClasses : ''
-                      }`}
-                      required
-                    />
-                    {validationErrors.contactNumber && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <AlertCircle className="h-4 w-4" />
-                        <span>{validationErrors.contactNumber}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+  {/* Full Name field (existing) */}
+  <div className="space-y-3">
+    <Label htmlFor="fullName" className="text-sm font-medium text-black">
+      Full name
+    </Label>
+    <Input
+      id="fullName"
+      value={formData.staffName}
+      onChange={(e) => {
+        setFormData({ ...formData, staffName: e.target.value });
+        if (validationErrors.staffName) {
+          setValidationErrors({ ...validationErrors, staffName: undefined });
+        }
+      }}
+      placeholder="Full name"
+      className={`${inputClasses} ${
+        validationErrors.staffName ? errorInputClasses : ''
+      }`}
+      required
+    />
+    {validationErrors.staffName && (
+      <div className="flex items-center gap-2 text-red-600 text-sm">
+        <AlertCircle className="h-4 w-4" />
+        <span>{validationErrors.staffName}</span>
+      </div>
+    )}
+  </div>
+  
+  {/* Contact Number field (existing) */}
+  <div className="space-y-3">
+    <Label htmlFor="contactNumber" className="text-sm font-medium text-black">
+      Contact number
+    </Label>
+    <Input
+      id="contactNumber"
+      value={formData.contactNumber}
+      onChange={(e) => {
+        setFormData({ ...formData, contactNumber: e.target.value });
+        if (validationErrors.contactNumber) {
+          setValidationErrors({ ...validationErrors, contactNumber: undefined });
+        }
+      }}
+      placeholder="Phone number"
+      className={`${inputClasses} ${
+        validationErrors.contactNumber ? errorInputClasses : ''
+      }`}
+      required
+    />
+    {validationErrors.contactNumber && (
+      <div className="flex items-center gap-2 text-red-600 text-sm">
+        <AlertCircle className="h-4 w-4" />
+        <span>{validationErrors.contactNumber}</span>
+      </div>
+    )}
+  </div>
+
+  {/* Password field (new) */}
+<div className="space-y-3">
+  <Label htmlFor="password" className="text-sm font-medium text-black">
+    Password
+  </Label>
+  <div className="relative">
+    <Input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      value={formData.password}
+      onChange={(e) => {
+        setFormData({ ...formData, password: e.target.value });
+        if (validationErrors.password) {
+          setValidationErrors({ ...validationErrors, password: undefined });
+        }
+      }}
+      placeholder="Enter password"
+      className={`${inputClasses} pr-10 ${
+        validationErrors.password ? errorInputClasses : ''
+      }`}
+      required
+    />
+    <button
+      type="button"
+      onClick={() => setShowPassword(!showPassword)}
+      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+    >
+      {showPassword ? (
+        <EyeOff className="h-4 w-4" />
+      ) : (
+        <Eye className="h-4 w-4" />
+      )}
+    </button>
+  </div>
+  {validationErrors.password && (
+    <div className="flex items-center gap-2 text-red-600 text-sm">
+      <AlertCircle className="h-4 w-4" />
+      <span>{validationErrors.password}</span>
+    </div>
+  )}
+</div>
+</div>
 
                 {/* Second Row - Select Role and Branch */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
